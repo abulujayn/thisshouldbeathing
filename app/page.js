@@ -199,48 +199,57 @@ export default function Home() {
   if (!isClient) return null;
 
   return (
-    <div className="app-container" style={{ minHeight: '100vh', paddingBottom: '4rem' }}>
+    <div className="app-container" style={{ minHeight: '100vh', paddingBottom: '6rem' }}>
 
       {/* Header */}
       <header style={{
-        padding: '2rem 0',
-        marginBottom: '2rem',
-        background: 'rgba(15, 23, 42, 0.8)',
-        backdropFilter: 'blur(10px)',
+        padding: '2.5rem 0',
+        marginBottom: '4rem',
+        background: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        borderBottom: '1px solid var(--glass-border)'
+        borderBottom: '1px solid var(--glass-border)',
+        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)'
       }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ background: 'var(--accent-gradient)', padding: '0.5rem', borderRadius: '8px', color: 'white' }}>
-              <Sparkles size={24} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <div style={{
+              background: 'var(--accent-gradient)',
+              padding: '0.75rem',
+              borderRadius: '14px',
+              color: 'white',
+              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)'
+            }}>
+              <Sparkles size={28} />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.5rem', margin: 0 }}>This Should Be A Thing</h1>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Public idea board for simple ideas that really should exist</p>
+              <h1 style={{ fontSize: '1.8rem', margin: 0, letterSpacing: '-0.02em' }}>This Should Be A Thing</h1>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Public idea board for simple ideas that really should exist</p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             <button
               onClick={handleToggleAdmin}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '0.6rem',
                 color: isAdmin ? '#ec4899' : 'var(--text-muted)',
-                padding: '0.5rem',
-                transition: 'color 0.2s'
+                padding: '0.6rem',
+                borderRadius: '8px',
+                background: isAdmin ? 'rgba(236, 72, 153, 0.1)' : 'transparent',
               }}
               title={isAdmin ? "Exit Admin Mode" : "Enter Admin Mode"}
             >
-              {isAdmin ? <ShieldCheck size={20} /> : <Shield size={20} />}
+              {isAdmin ? <ShieldCheck size={22} /> : <Shield size={22} />}
             </button>
 
-            <button onClick={() => setIsModalOpen(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Plus size={20} />
+            <button onClick={() => setIsModalOpen(true)} className="btn-primary">
+              <Plus size={22} />
               Submit Idea
             </button>
           </div>
@@ -249,19 +258,31 @@ export default function Home() {
 
       <main className="container">
         {/* Filter Bar */}
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <div style={{
+          display: 'flex',
+          gap: '1.25rem',
+          marginBottom: '3rem',
+          background: 'rgba(255,255,255,0.03)',
+          padding: '0.5rem',
+          borderRadius: '16px',
+          width: 'fit-content',
+          border: '1px solid var(--glass-border)'
+        }}>
           <button
             onClick={() => setSortBy('trending')}
             className={sortBy === 'trending' ? 'btn-secondary' : ''}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.6rem',
+              padding: '0.6rem 1.25rem',
+              borderRadius: '12px',
               opacity: sortBy === 'trending' ? 1 : 0.6,
-              background: sortBy === 'trending' ? 'rgba(255,255,255,0.1)' : 'transparent'
+              background: sortBy === 'trending' ? 'rgba(255,255,255,0.1)' : 'transparent',
+              border: sortBy === 'trending' ? '1px solid var(--glass-border)' : '1px solid transparent'
             }}
           >
-            <TrendingUp size={18} />
+            <TrendingUp size={20} />
             Trending
           </button>
           <button
@@ -270,36 +291,50 @@ export default function Home() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.6rem',
+              padding: '0.6rem 1.25rem',
+              borderRadius: '12px',
               opacity: sortBy === 'new' ? 1 : 0.6,
-              background: sortBy === 'new' ? 'rgba(255,255,255,0.1)' : 'transparent'
+              background: sortBy === 'new' ? 'rgba(255,255,255,0.1)' : 'transparent',
+              border: sortBy === 'new' ? '1px solid var(--glass-border)' : '1px solid transparent'
             }}
           >
-            <Clock size={18} />
+            <Clock size={20} />
             Newest
           </button>
         </div>
 
         {/* Ideas Grid/List */}
-        <div style={{ display: 'grid', gap: '1.5rem' }}>
-          {sortedIdeas.map(idea => (
-            <IdeaCard
-              key={idea.id}
-              idea={{ ...idea, userVoted: votedIds.has(idea.id) }}
-              onVote={handleVote}
-              onComment={handleComment}
-              isAdmin={isAdmin}
-              onDelete={requestDeleteIdea}
-              onDeleteComment={requestDeleteComment}
-              onResetVotes={requestResetVotes}
-              userEmail={userEmail}
-              onEmailChange={setUserEmail}
-            />
+        <div style={{ display: 'grid', gap: '2rem' }}>
+          {sortedIdeas.map((idea, index) => (
+            <div key={idea.id} style={{ animationDelay: `${index * 0.05}s` }} className="animate-fade-in">
+              <IdeaCard
+                idea={{ ...idea, userVoted: votedIds.has(idea.id) }}
+                onVote={handleVote}
+                onComment={handleComment}
+                isAdmin={isAdmin}
+                onDelete={requestDeleteIdea}
+                onDeleteComment={requestDeleteComment}
+                onResetVotes={requestResetVotes}
+                userEmail={userEmail}
+                onEmailChange={setUserEmail}
+              />
+            </div>
           ))}
 
           {sortedIdeas.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-              No ideas yet. Why not submit the first one?
+            <div style={{ textAlign: 'center', padding: '6rem', color: 'var(--text-muted)' }}>
+              <div style={{ marginBottom: '1.5rem', opacity: 0.3 }}>
+                <Sparkles size={64} />
+              </div>
+              <p style={{ fontSize: '1.2rem' }}>No ideas yet. Be the first to start the trend!</p>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="btn-primary"
+                style={{ marginTop: '2rem' }}
+              >
+                Submit the First Idea
+              </button>
             </div>
           )}
         </div>

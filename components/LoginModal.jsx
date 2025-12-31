@@ -28,8 +28,8 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.6)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(5, 8, 20, 0.75)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -41,31 +41,33 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 style={{
                     width: '100%',
                     maxWidth: '400px',
-                    padding: '2rem',
+                    padding: '2.5rem',
                     background: '#0f172a',
                     position: 'relative',
-                    border: '1px solid rgba(255,255,255,0.1)'
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                    animation: 'fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
                 onClick={e => e.stopPropagation()}
             >
                 <button
                     onClick={onClose}
-                    style={{ position: 'absolute', top: '1rem', right: '1rem', color: 'var(--text-muted)' }}
+                    style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', color: 'var(--text-muted)' }}
                 >
-                    <X size={24} />
+                    <X size={20} />
                 </button>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                    <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}>
-                        <Shield size={24} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+                    <div style={{ padding: '0.6rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '10px', color: '#8b5cf6' }}>
+                        <Shield size={28} />
                     </div>
-                    <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)' }}>Admin Login</h2>
+                    <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: '700' }}>Admin Login</h2>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div>
-                        <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                            Enter Password
+                        <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                            Password
                         </label>
                         <input
                             autoFocus
@@ -80,13 +82,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                             style={{ fontSize: '1.1rem', border: error ? '1px solid #ef4444' : '1px solid var(--glass-border)' }}
                         />
                         {error && (
-                            <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                                Incorrect password. Please try again.
+                            <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                Incorrect password. Try 'admin'.
                             </p>
                         )}
                     </div>
 
-                    <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+                    <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                         Login
                     </button>
                 </form>
