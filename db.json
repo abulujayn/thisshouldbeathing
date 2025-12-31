@@ -1,0 +1,44 @@
+{
+  "ideas": [
+    {
+      "id": "1",
+      "title": "Subscription Terminator",
+      "description": "A browser extension that generates a virtual card for free trials and automatically cancels it before you get charged. No more accidental $99/year charges.",
+      "votes": 42,
+      "timestamp": 1767100000000,
+      "author": "founder@subterm.io",
+      "comments": [
+        {
+          "id": "c1",
+          "text": "I need this yesterday.",
+          "author": "JohnDoe@example.com",
+          "timestamp": 1767105000000
+        },
+        {
+          "id": "c2",
+          "text": "Privacy.com kind of does this but manual.",
+          "author": "TechWiz@gmail.com",
+          "timestamp": 1767108000000
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "title": "Recipe Filter for \"Life Story\"",
+      "description": "An AI browser extension that detects recipe blogs and immediately extracts just the ingredients and instructions, hiding the 5-page story about the author's grandmother.",
+      "votes": 156,
+      "timestamp": 1767150000000,
+      "author": "hungry_coder@kitchen.io",
+      "comments": []
+    },
+    {
+      "title": "Website to suggest simple ideas",
+      "description": "Suggest simple ideas that don't yet exist but would be very useful",
+      "author": "zaeem@parkar.au",
+      "id": "1767170225437",
+      "timestamp": 1767170225437,
+      "votes": 1,
+      "comments": []
+    }
+  ]
+}
