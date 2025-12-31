@@ -23,21 +23,21 @@
       ]
     },
     {
-      "id": "3",
-      "title": "Recipe Filter for \"Life Story\"",
-      "description": "An AI browser extension that detects recipe blogs and immediately extracts just the ingredients and instructions, hiding the 5-page story about the author's grandmother.",
-      "votes": 156,
-      "timestamp": 1767150000000,
-      "author": "hungry_coder@kitchen.io",
-      "comments": []
-    },
-    {
       "title": "Website to suggest simple ideas",
       "description": "Suggest simple ideas that don't yet exist but would be very useful",
       "author": "zaeem@parkar.au",
       "id": "1767170225437",
       "timestamp": 1767170225437,
-      "votes": 1,
+      "votes": 3,
+      "comments": []
+    },
+    {
+      "title": "AI mentor platform",
+      "description": "A platform where an AI will be your mentor for any topic you like",
+      "author": "zaeem@parkar.au",
+      "id": "1767177371515",
+      "timestamp": 1767177371515,
+      "votes": 2,
       "comments": []
     }
   ]

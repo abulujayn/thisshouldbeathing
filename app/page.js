@@ -1,29 +1,22 @@
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Sparkles, TrendingUp, Clock, Shield, ShieldCheck } from 'lucide-react';
-import IdeaCard from './components/IdeaCard';
-import SubmitModal from './components/SubmitModal';
-import LoginModal from './components/LoginModal';
-import ConfirmModal from './components/ConfirmModal';
-import './App.css';
+import IdeaCard from '@/components/IdeaCard';
+import SubmitModal from '@/components/SubmitModal';
+import LoginModal from '@/components/LoginModal';
+import ConfirmModal from '@/components/ConfirmModal';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
-function App() {
+export default function Home() {
   const [ideas, setIdeas] = useState([]);
-  const [votedIds, setVotedIds] = useState(() => {
-    const saved = localStorage.getItem('tsbt_votes');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
+  const [votedIds, setVotedIds] = useState(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState('trending'); // trending | new
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userEmail, setUserEmail] = useState(() => localStorage.getItem('tsbt_email') || '');
-
-  useEffect(() => {
-    localStorage.setItem('tsbt_email', userEmail);
-  }, [userEmail]);
+  const [userEmail, setUserEmail] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   // Confirm Modal State
   const [confirmState, setConfirmState] = useState({
@@ -34,6 +27,16 @@ function App() {
   });
 
   const pollInterval = useRef(null);
+
+  // Handle Hydration
+  useEffect(() => {
+    setIsClient(true);
+    const savedVotes = localStorage.getItem('tsbt_votes');
+    if (savedVotes) setVotedIds(new Set(JSON.parse(savedVotes)));
+
+    const savedEmail = localStorage.getItem('tsbt_email');
+    if (savedEmail) setUserEmail(savedEmail);
+  }, []);
 
   const fetchIdeas = async () => {
     try {
@@ -47,15 +50,26 @@ function App() {
 
   // Initial Load & Polling
   useEffect(() => {
-    fetchIdeas();
-    pollInterval.current = setInterval(fetchIdeas, 5000); // Poll every 5 seconds
-    return () => clearInterval(pollInterval.current);
-  }, []);
+    if (isClient) {
+      fetchIdeas();
+      pollInterval.current = setInterval(fetchIdeas, 5000); // Poll every 5 seconds
+      return () => clearInterval(pollInterval.current);
+    }
+  }, [isClient]);
 
-  // Sync local votes to localStorage (only local state)
+  // Sync local votes to localStorage
   useEffect(() => {
-    localStorage.setItem('tsbt_votes', JSON.stringify([...votedIds]));
-  }, [votedIds]);
+    if (isClient) {
+      localStorage.setItem('tsbt_votes', JSON.stringify([...votedIds]));
+    }
+  }, [votedIds, isClient]);
+
+  // Sync email to localStorage
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('tsbt_email', userEmail);
+    }
+  }, [userEmail, isClient]);
 
   const handleToggleAdmin = () => {
     if (isAdmin) {
@@ -91,7 +105,6 @@ function App() {
       fetchIdeas(); // Refetch to confirm
     } catch (err) {
       console.error('Vote failed:', err);
-      // Rollback? Usually omitted for simplicity in basic apps
     }
   };
 
@@ -182,6 +195,8 @@ function App() {
     if (sortBy === 'trending') return b.votes - a.votes;
     return b.timestamp - a.timestamp;
   });
+
+  if (!isClient) return null;
 
   return (
     <div className="app-container" style={{ minHeight: '100vh', paddingBottom: '4rem' }}>
@@ -314,5 +329,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
