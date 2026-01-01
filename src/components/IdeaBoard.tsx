@@ -2,7 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Container, Heading, VStack, SimpleGrid, Box, Text, Spinner, Center } from '@chakra-ui/react';
+import { Container, Heading, HStack, VStack, SimpleGrid, Box, Text, Spinner, Center, Separator } from '@chakra-ui/react';
+import { Lightbulb } from 'lucide-react';
 import { Idea, Comment } from '@/lib/store';
 import { IdeaCard } from './IdeaCard';
 import { IdeaForm } from './IdeaForm';
@@ -116,41 +117,56 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
   if (loading) {
     return (
       <Center minH="50vh">
-        <Spinner size="xl" />
+        <VStack gap={4}>
+          <Spinner size="xl" color="blue.500" />
+          <Text color="fg.muted" fontWeight="medium">Loading ideas...</Text>
+        </VStack>
       </Center>
     );
   }
 
   return (
-    <Container maxW="4xl" py={12}>
-      <VStack gap={12} align="stretch">
-        <VStack gap={4} align="center">
-          <Heading size="3xl" textAlign="center">This should be a thing</Heading>
-          <Text fontSize="lg" color="fg.muted">Collaborate and upvote the best ideas for things that should exist.</Text>
+    <Container maxW="3xl" py={16}>
+      <VStack gap={16} align="stretch">
+        <VStack gap={6} align="center">
+          <Box p={3} bg="blue.50" borderRadius="2xl" color="blue.600">
+            <Lightbulb size={40} />
+          </Box>
+          <VStack gap={2}>
+            <Heading size="4xl" textAlign="center" letterSpacing="tight">This should be a thing</Heading>
+            <Text fontSize="xl" color="fg.muted" textAlign="center" maxW="md">
+              Collaborate and upvote the best ideas for things that should exist.
+            </Text>
+          </VStack>
           <IdeaForm onSubmit={handleSubmit} />
         </VStack>
 
-        <SimpleGrid columns={{ base: 1, md: 1 }} gap={6}>
-          {ideas.map((idea) => (
-            <IdeaCard 
-              key={idea.id} 
-              idea={idea} 
-              hasVoted={votedIdeas.has(idea.id)}
-              onVote={handleVote} 
-              onCommentAdded={handleCommentAdded}
-              isAdmin={isAdmin}
-              onDelete={handleDeleteIdea}
-              onResetVotes={handleResetVotes}
-              onDeleteComment={handleDeleteComment}
-            />
-          ))}
-        </SimpleGrid>
+        <VStack align="stretch" gap={8}>
+          <SimpleGrid columns={1} gap={8}>
+            {ideas.map((idea) => (
+              <IdeaCard 
+                key={idea.id} 
+                idea={idea} 
+                hasVoted={votedIdeas.has(idea.id)}
+                onVote={handleVote} 
+                onCommentAdded={handleCommentAdded}
+                isAdmin={isAdmin}
+                onDelete={handleDeleteIdea}
+                onResetVotes={handleResetVotes}
+                onDeleteComment={handleDeleteComment}
+              />
+            ))}
+          </SimpleGrid>
 
-        {ideas.length === 0 && (
-          <Center py={20}>
-            <Text color="fg.muted">No ideas yet. Be the first to share one!</Text>
-          </Center>
-        )}
+          {ideas.length === 0 && (
+            <Center py={20} flexDirection="column" gap={4}>
+              <Box color="gray.300">
+                <Lightbulb size={64} />
+              </Box>
+              <Text color="fg.muted" fontSize="lg">No ideas yet. Be the first to share one!</Text>
+            </Center>
+          )}
+        </VStack>
       </VStack>
     </Container>
   );

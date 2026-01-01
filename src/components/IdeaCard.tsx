@@ -1,12 +1,13 @@
 
 'use client';
 
-import { Box, Button, Heading, HStack, Text, VStack, IconButton } from '@chakra-ui/react';
-import { ThumbsUp, MessageSquare } from 'lucide-react';
+import { Box, Button, Heading, HStack, Text, VStack, IconButton, Badge } from '@chakra-ui/react';
+import { ThumbsUp, MessageSquare, MoreVertical, Trash2, RotateCcw } from 'lucide-react';
 import { Idea, Comment } from '@/lib/store';
 import { useState } from 'react';
 import { CommentSection } from './CommentSection';
 import { Tooltip } from '@/components/ui/tooltip';
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from '@/components/ui/menu';
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils';
 
 interface IdeaCardProps {
@@ -43,75 +44,121 @@ export const IdeaCard = ({
     <Box 
       p={6} 
       borderWidth="1px" 
-      borderRadius="lg" 
+      borderRadius="xl" 
       bg="bg.panel" 
       shadow="sm"
       transition="all 0.2s"
-      _hover={{ shadow: "md" }}
+      _hover={{ shadow: "md", borderColor: "blue.200" }}
+      position="relative"
     >
-      <VStack align="stretch" gap={4}>
-        <HStack justify="space-between" align="flex-start">
-          <VStack align="start" gap={1} flex={1}>
-            <Heading size="md">{idea.title}</Heading>
-            <Text fontSize="xs" color="blue.600" fontWeight="bold">by {idea.authorEmail || 'Anonymous'}</Text>
-            <Text color="fg.muted">{idea.description}</Text>
-          </VStack>
-          <VStack gap={1} align="center">
-            {!isAdmin && (
-              <>
-                <IconButton
-                  aria-label={hasVoted ? "Undo upvote" : "Upvote"}
-                  variant={hasVoted ? "solid" : "ghost"}
-                  colorPalette="blue"
-                  onClick={handleVote}
-                  loading={isVoting}
-                >
-                  <ThumbsUp />
-                </IconButton>
-                <Text fontWeight="bold" color={hasVoted ? "blue.500" : "inherit"}>{idea.votes}</Text>
-              </>
-            )}
-            {isAdmin && (
-              <VStack gap={2}>
-                <Button size="xs" colorPalette="orange" onClick={() => onResetVotes?.(idea.id)}>
-                  Reset Votes ({idea.votes})
-                </Button>
-                <Button size="xs" colorPalette="red" onClick={() => onDelete?.(idea.id)}>
-                  Delete Idea
-                </Button>
-              </VStack>
-            )}
-          </VStack>
-        </HStack>
-        
-        <HStack gap={4}>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            gap={1} 
-            color="fg.muted"
-            onClick={() => setShowComments(!showComments)}
+      <HStack align="start" gap={6}>
+        {/* Voting Section (Left) */}
+        <VStack gap={1} align="center" pt={1}>
+          <IconButton
+            aria-label={hasVoted ? "Undo upvote" : "Upvote"}
+            variant={hasVoted ? "solid" : "outline"}
+            colorPalette="blue"
+            onClick={handleVote}
+            loading={isVoting}
+            rounded="full"
+            size="sm"
           >
-            <MessageSquare size={16} />
-            <Text fontSize="sm">{idea.comments.length} comments</Text>
-          </Button>
-          <Tooltip content={getFullTimestamp(idea.createdAt)}>
-            <Text fontSize="xs" color="fg.subtle" cursor="help">
-              {getRelativeTime(idea.createdAt)}
-            </Text>
-          </Tooltip>
-        </HStack>
+            <ThumbsUp size={16} />
+          </IconButton>
+          <Text fontSize="sm" fontWeight="bold" color={hasVoted ? "blue.600" : "fg.muted"}>
+            {idea.votes}
+          </Text>
+        </VStack>
 
-        {showComments && (
-          <CommentSection 
-            ideaId={idea.id} 
-            comments={idea.comments} 
-            onCommentAdded={(c) => onCommentAdded(idea.id, c)}
-            isAdmin={isAdmin}
-            onDeleteComment={(commentId) => onDeleteComment?.(idea.id, commentId)}
-          />
-        )}
-      </VStack>
+        {/* Main Content (Right) */}
+        <VStack align="stretch" gap={4} flex={1}>
+          <HStack justify="space-between" align="start">
+            <VStack align="start" gap={2} flex={1}>
+              <Heading size="md" lineHeight="tight">{idea.title}</Heading>
+              <Text color="fg.muted" fontSize="md" lineHeight="relaxed">
+                {idea.description}
+              </Text>
+            </VStack>
+            
+            {isAdmin && (
+              <MenuRoot>
+                <MenuTrigger asChild>
+                  <IconButton variant="ghost" size="sm" aria-label="Admin actions" mt={-1}>
+                    <MoreVertical size={18} />
+                  </IconButton>
+                </MenuTrigger>
+                <MenuContent>
+                  <MenuItem 
+                    value="reset" 
+                    onClick={() => onResetVotes?.(idea.id)}
+                    color="orange.500"
+                  >
+                    <RotateCcw size={14} />
+                    <Text ms={2}>Reset Votes ({idea.votes})</Text>
+                  </MenuItem>
+                  <MenuItem 
+                    value="delete" 
+                    onClick={() => onDelete?.(idea.id)}
+                    color="red.500"
+                  >
+                    <Trash2 size={14} />
+                    <Text ms={2}>Delete Idea</Text>
+                  </MenuItem>
+                </MenuContent>
+              </MenuRoot>
+            )}
+          </HStack>
+
+          <VStack align="start" gap={1} mt={2}>
+            <HStack gap={2}>
+              <Text fontSize="xs" fontWeight="medium" color="fg.subtle">
+                Posted by {idea.authorEmail || 'Anonymous'}
+              </Text>
+              <Text fontSize="xs" color="fg.subtle">•</Text>
+              <Tooltip content={getFullTimestamp(idea.createdAt)}>
+                <Text fontSize="xs" color="fg.subtle">
+                  {getRelativeTime(idea.createdAt)}
+                </Text>
+              </Tooltip>
+            </HStack>
+            
+            <HStack gap={4}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                gap={2} 
+                color="blue.600"
+                onClick={() => setShowComments(!showComments)}
+                px={0}
+                _hover={{ bg: "transparent", textDecoration: "underline" }}
+              >
+                <MessageSquare size={16} />
+                <Text fontSize="sm" fontWeight="medium">
+                  {idea.comments.length} {idea.comments.length === 1 ? 'comment' : 'comments'}
+                </Text>
+              </Button>
+              
+              {idea.votes > 10 && (
+                <Badge colorPalette="orange" variant="subtle" size="sm" rounded="full">
+                  Trending
+                </Badge>
+              )}
+            </HStack>
+          </VStack>
+
+          {showComments && (
+            <Box pt={2}>
+              <CommentSection 
+                ideaId={idea.id} 
+                comments={idea.comments} 
+                onCommentAdded={(c) => onCommentAdded(idea.id, c)}
+                isAdmin={isAdmin}
+                onDeleteComment={(commentId) => onDeleteComment?.(idea.id, commentId)}
+              />
+            </Box>
+          )}
+        </VStack>
+      </HStack>
     </Box>
   );
 };

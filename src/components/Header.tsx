@@ -26,19 +26,15 @@ export const Header = ({ onAdminTrigger, isAdmin, onLogout }: HeaderProps) => {
     let textNode: Node | null = null;
     
     if (typeof document !== 'undefined') {
-      // @ts-expect-error - caretRangeFromPoint
-      if (document.caretRangeFromPoint) {
-        // @ts-expect-error - caretRangeFromPoint
-        const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+      if ((document as any).caretRangeFromPoint) {
+        const range = (document as any).caretRangeFromPoint(e.clientX, e.clientY);
         if (range) {
           offset = range.startOffset;
           textNode = range.startContainer;
         }
       } 
-      // @ts-expect-error - caretPositionFromPoint
-      else if (document.caretPositionFromPoint) {
-        // @ts-expect-error - caretPositionFromPoint
-        const position = document.caretPositionFromPoint(e.clientX, e.clientY);
+      else if ((document as any).caretPositionFromPoint) {
+        const position = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
         if (position) {
           offset = position.offset;
           textNode = position.offsetNode;

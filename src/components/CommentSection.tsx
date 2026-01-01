@@ -2,9 +2,11 @@
 'use client';
 
 import { useState } from 'react';
-import { VStack, Text, Input, Button, HStack, Box, Separator } from '@chakra-ui/react';
+import { VStack, Text, Input, Button, HStack, Box, Stack, IconButton } from '@chakra-ui/react';
+import { Trash2, Send } from 'lucide-react';
 import { Comment } from '@/lib/store';
 import { Tooltip } from '@/components/ui/tooltip';
+import { Field } from '@/components/ui/field';
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils';
 
 interface CommentSectionProps {
@@ -38,72 +40,98 @@ export const CommentSection = ({
       const newComment = await res.json();
       onCommentAdded(newComment);
       setText('');
-      setAuthorEmail('');
+      // Keep author email for convenience
     }
     setIsSubmitting(false);
   };
 
   return (
-    <VStack align="stretch" gap={4} pt={4}>
-      <Separator />
-      <Text fontWeight="medium" fontSize="sm">Comments</Text>
-      <VStack align="stretch" gap={2}>
+    <VStack align="stretch" gap={6} pt={2}>
+      <VStack align="stretch" gap={4}>
         {comments.map((comment) => (
-          <Box key={comment.id} p={2} bg="bg.muted" borderRadius="md">
-            <HStack justify="space-between" align="start">
-              <VStack align="start" gap={0} flex={1}>
+          <Box key={comment.id} flex={1}>
+            <Box bg="bg.muted" p={3} borderRadius="lg" position="relative">
+              <HStack justify="space-between" align="baseline" mb={1}>
+                <Text fontSize="xs" fontWeight="bold">
+                  {comment.authorEmail || 'Anonymous'}
+                </Text>
                 <HStack gap={2}>
-                  <Text fontSize="xs" fontWeight="bold" color="blue.600">{comment.authorEmail || 'Anonymous'}</Text>
                   <Tooltip content={getFullTimestamp(comment.createdAt)}>
-                    <Text fontSize="xs" color="fg.subtle" cursor="help">
+                    <Text fontSize="2xs" color="fg.subtle">
                       {getRelativeTime(comment.createdAt)}
                     </Text>
                   </Tooltip>
+                  {isAdmin && onDeleteComment && (
+                    <IconButton 
+                      size="2xs" 
+                      variant="ghost" 
+                      colorPalette="red" 
+                      aria-label="Delete comment"
+                      onClick={() => onDeleteComment(comment.id)}
+                    >
+                      <Trash2 size={12} />
+                    </IconButton>
+                  )}
                 </HStack>
-                <Text fontSize="sm">{comment.text}</Text>
-              </VStack>
-              {isAdmin && onDeleteComment && (
-                <Button 
-                  size="xs" 
-                  variant="ghost" 
-                  colorPalette="red" 
-                  onClick={() => onDeleteComment(comment.id)}
-                >
-                  Delete
-                </Button>
-              )}
-            </HStack>
+              </HStack>
+              <Text fontSize="sm" color="fg.emphasized">{comment.text}</Text>
+            </Box>
           </Box>
         ))}
         {comments.length === 0 && (
-          <Text fontSize="sm" color="fg.muted">No comments yet.</Text>
+          <Box py={2} textAlign="center">
+            <Text fontSize="sm" color="fg.subtle" fontStyle="italic">No comments yet. Be the first to share your thoughts!</Text>
+          </Box>
         )}
       </VStack>
-      <VStack align="stretch" gap={2}>
-        <Input 
-          size="sm" 
-          type="email"
-          placeholder="Your email..." 
-          value={authorEmail} 
-          onChange={(e) => setAuthorEmail(e.target.value)}
-        />
-        <HStack>
-          <Input 
-            size="sm" 
-            placeholder="Add a comment..." 
-            value={text} 
-            onChange={(e) => setText(e.target.value)}
-          />
-          <Button 
-            size="sm" 
-            colorPalette="blue" 
-            loading={isSubmitting}
-            onClick={handleSubmit}
-            disabled={!text || !authorEmail}
-          >
-            Post
-          </Button>
-        </HStack>
+
+      <VStack 
+        as="form" 
+        align="stretch" 
+        gap={3} 
+        p={4} 
+        bg="bg.subtle" 
+        borderRadius="xl"
+        onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+      >
+        <Text fontSize="xs" fontWeight="bold" color="fg.muted" textTransform="uppercase" letterSpacing="wider">
+          Add a comment
+        </Text>
+        <Stack direction={{ base: "column", md: "row" }} gap={3}>
+          <Field flex={1}>
+            <Input 
+              size="sm" 
+              type="email"
+              bg="bg.panel"
+              placeholder="Your email" 
+              value={authorEmail} 
+              onChange={(e) => setAuthorEmail(e.target.value)}
+              required
+            />
+          </Field>
+          <Field flex={2}>
+            <HStack gap={2} width="full">
+              <Input 
+                size="sm" 
+                bg="bg.panel"
+                placeholder="What's on your mind?" 
+                value={text} 
+                onChange={(e) => setText(e.target.value)}
+                required
+              />
+              <Button 
+                size="sm" 
+                colorPalette="blue" 
+                loading={isSubmitting}
+                onClick={handleSubmit}
+                disabled={!text || !authorEmail}
+                px={4}
+              >
+                <Send size={14} />
+              </Button>
+            </HStack>
+          </Field>
+        </Stack>
       </VStack>
     </VStack>
   );
