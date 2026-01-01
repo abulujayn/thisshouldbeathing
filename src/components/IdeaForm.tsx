@@ -18,7 +18,6 @@ import { LoginModal } from './LoginModal';
 
 interface IdeaFormProps {
   onSubmit: (title: string, description: string, authorEmail: string) => Promise<void>;
-  initialEmail?: string;
 }
 
 export const IdeaForm = ({ onSubmit }: IdeaFormProps) => {
@@ -61,14 +60,6 @@ export const IdeaForm = ({ onSubmit }: IdeaFormProps) => {
           </DialogHeader>
           <DialogBody py={6}>
             <VStack gap={5}>
-              <Field label="Your Email" disabled>
-                <Input 
-                  type="email"
-                  value={user?.email || ''} 
-                  readOnly
-                  bg="bg.subtle"
-                />
-              </Field>
               <Field label="Title" required helperText="Make it short and catchy">
                 <Input 
                   placeholder="What is your idea?" 

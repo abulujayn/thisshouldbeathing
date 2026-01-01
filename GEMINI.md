@@ -73,4 +73,4 @@
 ## General advices
 
 *   Once finished making changes, run `npm run lint` and fix any errors or warnings that come up. Then run `npm run build` to confirm the project builds successfully.
-*   Generate short but meaningful commit messages after completion of making changes. The first word should be a verb such as "add" or "fix" or "change" or "update" and keep the commit message lowercase.
+*   Once finished making changes, come up with a commit message for the changes. The first word should be a verb such as "add" or "fix" or "change" or "update" and keep the commit message lowercase. Do not actually commit anything until confirmed.
