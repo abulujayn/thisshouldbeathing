@@ -30,6 +30,7 @@ REDIS_URL=redis://localhost:6379
 
 # Resend (Email Authentication)
 RESEND_API_KEY=re_123456789
+SYSTEM_EMAIL=This Should Be A Thing <onboarding@resend.dev>
 
 # Authentication
 JWT_SECRET=your-secret-key-here
