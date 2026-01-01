@@ -4,6 +4,7 @@ import { getRedisClient } from './redis';
 export interface Comment {
   id: string;
   text: string;
+  authorEmail: string;
   createdAt: number;
 }
 
@@ -11,6 +12,7 @@ export interface Idea {
   id: string;
   title: string;
   description: string;
+  authorEmail: string;
   votes: number;
   comments: Comment[];
   createdAt: number;
@@ -23,9 +25,10 @@ const initialData: Idea[] = [
     id: '1',
     title: 'Light Mode by default',
     description: 'The app should detect system preference and set light mode accordingly, as per the latest design guidelines.',
+    authorEmail: 'admin@example.com',
     votes: 5,
     comments: [
-      { id: 'c1', text: 'This should definitely be a thing!', createdAt: Date.now() }
+      { id: 'c1', text: 'This should definitely be a thing!', authorEmail: 'user@example.com', createdAt: Date.now() }
     ],
     createdAt: Date.now()
   }

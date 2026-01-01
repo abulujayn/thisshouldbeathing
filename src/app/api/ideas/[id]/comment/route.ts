@@ -14,6 +14,7 @@ export async function POST(
     const newComment = {
       id: Math.random().toString(36).substring(7),
       text: body.text,
+      authorEmail: body.authorEmail,
       createdAt: Date.now(),
     };
     idea.comments.push(newComment);

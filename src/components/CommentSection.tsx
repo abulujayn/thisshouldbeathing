@@ -23,20 +23,22 @@ export const CommentSection = ({
   onDeleteComment 
 }: CommentSectionProps) => {
   const [text, setText] = useState('');
+  const [authorEmail, setAuthorEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!text) return;
+    if (!text || !authorEmail) return;
     setIsSubmitting(true);
     const res = await fetch(`/api/ideas/${ideaId}/comment`, {
       method: 'POST',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, authorEmail }),
       headers: { 'Content-Type': 'application/json' },
     });
     if (res.ok) {
       const newComment = await res.json();
       onCommentAdded(newComment);
       setText('');
+      setAuthorEmail('');
     }
     setIsSubmitting(false);
   };
@@ -50,12 +52,15 @@ export const CommentSection = ({
           <Box key={comment.id} p={2} bg="bg.muted" borderRadius="md">
             <HStack justify="space-between" align="start">
               <VStack align="start" gap={0} flex={1}>
+                <HStack gap={2}>
+                  <Text fontSize="xs" fontWeight="bold" color="blue.600">{comment.authorEmail || 'Anonymous'}</Text>
+                  <Tooltip content={getFullTimestamp(comment.createdAt)}>
+                    <Text fontSize="xs" color="fg.subtle" cursor="help">
+                      {getRelativeTime(comment.createdAt)}
+                    </Text>
+                  </Tooltip>
+                </HStack>
                 <Text fontSize="sm">{comment.text}</Text>
-                <Tooltip content={getFullTimestamp(comment.createdAt)}>
-                  <Text fontSize="xs" color="fg.subtle" cursor="help" width="fit-content">
-                    {getRelativeTime(comment.createdAt)}
-                  </Text>
-                </Tooltip>
               </VStack>
               {isAdmin && onDeleteComment && (
                 <Button 
@@ -74,22 +79,32 @@ export const CommentSection = ({
           <Text fontSize="sm" color="fg.muted">No comments yet.</Text>
         )}
       </VStack>
-      <HStack>
+      <VStack align="stretch" gap={2}>
         <Input 
           size="sm" 
-          placeholder="Add a comment..." 
-          value={text} 
-          onChange={(e) => setText(e.target.value)}
+          type="email"
+          placeholder="Your email..." 
+          value={authorEmail} 
+          onChange={(e) => setAuthorEmail(e.target.value)}
         />
-        <Button 
-          size="sm" 
-          colorPalette="blue" 
-          loading={isSubmitting}
-          onClick={handleSubmit}
-        >
-          Post
-        </Button>
-      </HStack>
+        <HStack>
+          <Input 
+            size="sm" 
+            placeholder="Add a comment..." 
+            value={text} 
+            onChange={(e) => setText(e.target.value)}
+          />
+          <Button 
+            size="sm" 
+            colorPalette="blue" 
+            loading={isSubmitting}
+            onClick={handleSubmit}
+            disabled={!text || !authorEmail}
+          >
+            Post
+          </Button>
+        </HStack>
+      </VStack>
     </VStack>
   );
 };

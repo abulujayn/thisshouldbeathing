@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     id: Math.random().toString(36).substring(7),
     title: body.title,
     description: body.description,
+    authorEmail: body.authorEmail,
     votes: 0,
     comments: [],
     createdAt: Date.now(),

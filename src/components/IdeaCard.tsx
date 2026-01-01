@@ -53,6 +53,7 @@ export const IdeaCard = ({
         <HStack justify="space-between" align="flex-start">
           <VStack align="start" gap={1} flex={1}>
             <Heading size="md">{idea.title}</Heading>
+            <Text fontSize="xs" color="blue.600" fontWeight="bold">by {idea.authorEmail || 'Anonymous'}</Text>
             <Text color="fg.muted">{idea.description}</Text>
           </VStack>
           <VStack gap={1} align="center">

@@ -96,10 +96,10 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
     }
   };
 
-  const handleSubmit = async (title: string, description: string) => {
+  const handleSubmit = async (title: string, description: string, authorEmail: string) => {
     const res = await fetch('/api/ideas', {
       method: 'POST',
-      body: JSON.stringify({ title, description }),
+      body: JSON.stringify({ title, description, authorEmail }),
       headers: { 'Content-Type': 'application/json' },
     });
     if (res.ok) {
