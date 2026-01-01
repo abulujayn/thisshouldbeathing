@@ -191,7 +191,7 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
           <VStack gap={2}>
             <Heading size="4xl" textAlign="center" letterSpacing="tight">This should be a thing</Heading>
             <Text fontSize="xl" color="fg.muted" textAlign="center" maxW="md">
-              Collaborate and upvote the best ideas for things that should exist.
+              Share and colloborate on simple ideas which really should exist already.
             </Text>
           </VStack>
           <IdeaForm onSubmit={handleSubmit} />
