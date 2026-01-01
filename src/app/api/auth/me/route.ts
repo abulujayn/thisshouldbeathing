@@ -15,5 +15,5 @@ export async function GET() {
     return NextResponse.json({ user: null });
   }
 
-  return NextResponse.json({ user: { email: (payload as any).email } });
+  return NextResponse.json({ user: { email: (payload as { email: string }).email } });
 }

@@ -42,7 +42,7 @@ export const LoginModal = ({ isOpen, onOpenChange, onLoginSuccess }: LoginModalP
       } else {
         toaster.create({ description: data.error || 'Failed to send code', type: 'error' });
       }
-    } catch (error) {
+    } catch {
       toaster.create({ description: 'An error occurred', type: 'error' });
     }
     setIsLoading(false);
@@ -69,7 +69,7 @@ export const LoginModal = ({ isOpen, onOpenChange, onLoginSuccess }: LoginModalP
       } else {
         toaster.create({ description: data.error || 'Invalid code', type: 'error' });
       }
-    } catch (error) {
+    } catch {
       toaster.create({ description: 'An error occurred', type: 'error' });
     }
     setIsLoading(false);

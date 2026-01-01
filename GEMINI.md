@@ -9,6 +9,7 @@
 *   **Idea Management:** Users can submit new ideas with titles and descriptions.
 *   **Voting System:** Community voting mechanism to highlight popular ideas.
 *   **Comments:** Threaded discussion support for each idea.
+*   **Email Authentication:** Secure login via email verification codes using Resend.
 *   **Admin System:**
     *   **Passwordless Auth:** Uses WebAuthn (Passkeys) for secure, modern authentication.
     *   **First-run Setup:** Automatic prompt to register the first admin passkey if none exists.
@@ -22,7 +23,9 @@
 *   **UI Library:** Chakra UI v3 (with Emotion)
 *   **Icons:** Lucide React, React Icons
 *   **Database:** Redis (via `redis` client)
-*   **Authentication:** `@simplewebauthn/browser` & `@simplewebauthn/server`
+*   **Authentication:**
+    *   **Admin:** `@simplewebauthn/browser` & `@simplewebauthn/server`
+    *   **User:** `resend` (Email) & `jsonwebtoken` (Sessions)
 *   **State Management:** Server-side state via Redis, Client-side React hooks.
 
 ## Architecture & Directory Structure

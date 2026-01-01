@@ -11,7 +11,7 @@ export async function signToken(payload: object) {
 export async function verifyToken(token: string) {
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch (e) {
+  } catch {
     return null;
   }
 }
