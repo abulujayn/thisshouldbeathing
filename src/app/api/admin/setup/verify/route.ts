@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         },
       };
 
-      saveAdminData(adminData);
+      await saveAdminData(adminData);
       
       const response = NextResponse.json({ verified: true });
       response.cookies.set('admin_session', 'authenticated', { 

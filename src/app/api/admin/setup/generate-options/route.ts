@@ -3,7 +3,7 @@ import { generateRegistrationOptions } from '@simplewebauthn/server';
 import { getAdminData } from '@/lib/admin';
 
 export async function POST(req: Request) {
-  const adminData = getAdminData();
+  const adminData = await getAdminData();
   
   // If already setup, don't allow re-setup without auth (simplified)
   if (adminData?.credential) {

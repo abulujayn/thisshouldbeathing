@@ -25,7 +25,7 @@ export async function POST(
 
   const { id } = await params;
 
-  const ideas = getIdeas();
+  const ideas = await getIdeas();
 
   const idea = ideas.find((i) => i.id === id);
 
@@ -35,7 +35,7 @@ export async function POST(
 
     idea.votes = 0;
 
-    saveIdeas(ideas);
+    await saveIdeas(ideas);
 
     return NextResponse.json(idea);
 

@@ -46,3 +46,4 @@ ideas_data.json
 
 # logs
 *.log
+.env*.local

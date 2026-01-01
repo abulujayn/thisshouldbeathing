@@ -12,12 +12,12 @@ export async function DELETE(
   }
 
   const { id, commentId } = await params;
-  const ideas = getIdeas();
+  const ideas = await getIdeas();
   const idea = ideas.find((i) => i.id === id);
 
   if (idea) {
     idea.comments = idea.comments.filter((c) => c.id !== commentId);
-    saveIdeas(ideas);
+    await saveIdeas(ideas);
     return NextResponse.json({ success: true });
   }
 

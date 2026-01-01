@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { getRedisClient } from './redis';
 
 export interface Comment {
   id: string;
@@ -16,9 +15,8 @@ export interface Idea {
   createdAt: number;
 }
 
-const DATA_FILE = path.join(process.cwd(), 'ideas_data.json');
+const IDEAS_KEY = 'ideas_data';
 
-// Initialize with some data if the file doesn't exist
 const initialData: Idea[] = [
   {
     id: '1',
@@ -32,27 +30,28 @@ const initialData: Idea[] = [
   }
 ];
 
-export function getIdeas(): Idea[] {
+export async function getIdeas(): Promise<Idea[]> {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
+    const client = await getRedisClient();
+    const data = await client.get(IDEAS_KEY);
+    
+    if (!data) {
+      await saveIdeas(initialData);
       return initialData;
     }
-    const data = fs.readFileSync(DATA_FILE, 'utf-8');
+    
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error reading data:', error);
+    console.error('Error reading data from Redis:', error);
     return initialData;
   }
 }
 
-export function saveIdeas(ideas: Idea[]) {
+export async function saveIdeas(ideas: Idea[]) {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(ideas, null, 2));
+    const client = await getRedisClient();
+    await client.set(IDEAS_KEY, JSON.stringify(ideas));
   } catch (error) {
-    console.error('Error saving data:', error);
+    console.error('Error saving data to Redis:', error);
   }
 }
-
-// For compatibility with existing imports during transition
-export const ideas = getIdeas();

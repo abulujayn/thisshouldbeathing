@@ -3,7 +3,7 @@ import { generateAuthenticationOptions } from '@simplewebauthn/server';
 import { getAdminData } from '@/lib/admin';
 
 export async function POST(req: Request) {
-  const adminData = getAdminData();
+  const adminData = await getAdminData();
   
   if (!adminData || !adminData.credential) {
     return NextResponse.json({ error: 'Admin not setup' }, { status: 400 });

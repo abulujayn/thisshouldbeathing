@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const adminData = getAdminData();
+  const adminData = await getAdminData();
   const cookieStore = await cookies();
   const expectedChallenge = cookieStore.get('auth_challenge')?.value;
 
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       // Update counter
       if (adminData && adminData.credential) {
         adminData.credential.counter = verification.authenticationInfo.newCounter;
-        saveAdminData(adminData);
+        await saveAdminData(adminData);
       }
 
       const response = NextResponse.json({ verified: true });

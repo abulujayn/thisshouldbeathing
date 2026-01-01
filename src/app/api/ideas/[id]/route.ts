@@ -12,11 +12,11 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const ideas = getIdeas();
+  const ideas = await getIdeas();
   const filteredIdeas = ideas.filter((i) => i.id !== id);
   
   if (ideas.length !== filteredIdeas.length) {
-    saveIdeas(filteredIdeas);
+    await saveIdeas(filteredIdeas);
     return NextResponse.json({ success: true });
   }
   

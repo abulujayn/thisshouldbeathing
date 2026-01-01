@@ -7,7 +7,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const { action } = await request.json();
-  const ideas = getIdeas();
+  const ideas = await getIdeas();
   const idea = ideas.find((i) => i.id === id);
   
   if (idea) {
@@ -16,7 +16,7 @@ export async function POST(
     } else if (action === 'unvote') {
       idea.votes = Math.max(0, idea.votes - 1);
     }
-    saveIdeas(ideas);
+    await saveIdeas(ideas);
     return NextResponse.json(idea);
   }
   return NextResponse.json({ error: 'Not found' }, { status: 404 });

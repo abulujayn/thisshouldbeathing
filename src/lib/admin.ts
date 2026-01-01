@@ -1,8 +1,7 @@
-import fs from 'fs';
-import path from 'path';
 import { cookies } from 'next/headers';
+import { getRedisClient } from './redis';
 
-const ADMIN_DATA_FILE = path.join(process.cwd(), 'admin_data.json');
+const ADMIN_DATA_KEY = 'admin_data';
 
 export interface AdminCredential {
   id: string;
@@ -16,21 +15,27 @@ export interface AdminData {
   username: string;
 }
 
-export function getAdminData(): AdminData | null {
-  if (!fs.existsSync(ADMIN_DATA_FILE)) {
-    return null;
-  }
+export async function getAdminData(): Promise<AdminData | null> {
   try {
-    const data = fs.readFileSync(ADMIN_DATA_FILE, 'utf-8');
+    const client = await getRedisClient();
+    const data = await client.get(ADMIN_DATA_KEY);
+    if (!data) {
+      return null;
+    }
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error reading admin data:', error);
+    console.error('Error reading admin data from Redis:', error);
     return null;
   }
 }
 
-export function saveAdminData(data: AdminData) {
-  fs.writeFileSync(ADMIN_DATA_FILE, JSON.stringify(data, null, 2));
+export async function saveAdminData(data: AdminData) {
+  try {
+    const client = await getRedisClient();
+    await client.set(ADMIN_DATA_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error('Error saving admin data to Redis:', error);
+  }
 }
 
 export async function isAuthenticated() {
