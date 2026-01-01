@@ -1,9 +1,8 @@
-
 'use client';
 
-import { useState } from 'react';
-import { VStack, Text, Input, Button, HStack, Box, Stack, IconButton } from '@chakra-ui/react';
-import { Trash2, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { VStack, Text, Input, Button, HStack, Box, Stack, IconButton, Textarea, Separator, Avatar } from '@chakra-ui/react';
+import { Trash2, Send, Pencil, Check, X, MessageSquare } from 'lucide-react';
 import { Comment } from '@/lib/store';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Field } from '@/components/ui/field';
@@ -14,7 +13,9 @@ interface CommentSectionProps {
   comments: Comment[];
   onCommentAdded: (newComment: Comment) => void;
   isAdmin?: boolean;
+  userEmail?: string;
   onDeleteComment?: (commentId: string) => void;
+  onUpdateComment?: (commentId: string, text: string) => Promise<void>;
 }
 
 export const CommentSection = ({ 
@@ -22,11 +23,30 @@ export const CommentSection = ({
   comments, 
   onCommentAdded, 
   isAdmin, 
-  onDeleteComment 
+  userEmail,
+  onDeleteComment,
+  onUpdateComment
 }: CommentSectionProps) => {
   const [text, setText] = useState('');
-  const [authorEmail, setAuthorEmail] = useState('');
+  const [authorEmail, setAuthorEmail] = useState(userEmail || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  const handleUpdate = async (commentId: string) => {
+    setIsUpdating(true);
+    await onUpdateComment?.(commentId, editText);
+    setIsUpdating(false);
+    setEditingCommentId(null);
+  };
+
+  useEffect(() => {
+    if (userEmail) {
+      setAuthorEmail(userEmail);
+    }
+  }, [userEmail]);
 
   const handleSubmit = async () => {
     if (!text || !authorEmail) return;
@@ -40,99 +60,199 @@ export const CommentSection = ({
       const newComment = await res.json();
       onCommentAdded(newComment);
       setText('');
-      // Keep author email for convenience
+      setIsFormOpen(false);
     }
     setIsSubmitting(false);
   };
 
   return (
-    <VStack align="stretch" gap={6} pt={2}>
-      <VStack align="stretch" gap={4}>
-        {comments.map((comment) => (
-          <Box key={comment.id} flex={1}>
-            <Box bg="bg.muted" p={3} borderRadius="lg" position="relative">
-              <HStack justify="space-between" align="baseline" mb={1}>
-                <Text fontSize="xs" fontWeight="bold">
-                  {comment.authorEmail || 'Anonymous'}
-                </Text>
-                <HStack gap={2}>
-                  <Tooltip content={getFullTimestamp(comment.createdAt)}>
-                    <Text fontSize="2xs" color="fg.subtle">
-                      {getRelativeTime(comment.createdAt)}
-                    </Text>
-                  </Tooltip>
-                  {isAdmin && onDeleteComment && (
-                    <IconButton 
-                      size="2xs" 
-                      variant="ghost" 
-                      colorPalette="red" 
-                      aria-label="Delete comment"
-                      onClick={() => onDeleteComment(comment.id)}
-                    >
-                      <Trash2 size={12} />
-                    </IconButton>
-                  )}
+    <VStack align="stretch" gap={8} pt={4}>
+      <Separator />
+      
+      <VStack align="stretch" gap={6}>
+        <HStack justify="space-between">
+          <HStack gap={2} color="fg.muted">
+            <MessageSquare size={16} />
+            <Text fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">
+              Discussion ({comments.length})
+            </Text>
+          </HStack>
+          
+          {!isFormOpen && (
+            <Button 
+              size="xs" 
+              variant="ghost" 
+              colorPalette="blue"
+              onClick={() => setIsFormOpen(true)}
+              fontWeight="bold"
+            >
+              Add Comment
+            </Button>
+          )}
+        </HStack>
+
+        <VStack align="stretch" gap={0}>
+          {comments.map((comment, index) => {
+            const isAuthor = userEmail && comment.authorEmail === userEmail;
+            const canManage = isAdmin || isAuthor;
+            const isEditing = editingCommentId === comment.id;
+
+            return (
+              <Box key={comment.id}>
+                <HStack align="start" gap={4} py={4}>
+                  <Avatar.Root size="sm">
+                    <Avatar.Fallback name={comment.authorEmail} />
+                  </Avatar.Root>
+                  <VStack align="stretch" gap={1} flex={1}>
+                    <HStack justify="space-between" align="center">
+                      <HStack gap={2}>
+                        <Text fontSize="sm" fontWeight="semibold">
+                          {comment.authorEmail || 'Anonymous'}
+                        </Text>
+                        <Text fontSize="xs" color="fg.subtle">•</Text>
+                        <Tooltip content={getFullTimestamp(comment.createdAt)}>
+                          <Text fontSize="xs" color="fg.subtle">
+                            {getRelativeTime(comment.createdAt)}
+                          </Text>
+                        </Tooltip>
+                      </HStack>
+                      
+                      <HStack gap={0}>
+                        {!isEditing && canManage && (
+                          <IconButton 
+                            size="xs" 
+                            variant="ghost" 
+                            aria-label="Edit comment"
+                            _hover={{ bg: "bg.subtle" }}
+                            onClick={() => {
+                              setEditingCommentId(comment.id);
+                              setEditText(comment.text);
+                            }}
+                          >
+                            <Pencil size={12} />
+                          </IconButton>
+                        )}
+                        {canManage && onDeleteComment && (
+                          <IconButton 
+                            size="xs" 
+                            variant="ghost" 
+                            colorPalette="red" 
+                            aria-label="Delete comment"
+                            _hover={{ bg: "red.50", color: "red.600" }}
+                            onClick={() => onDeleteComment(comment.id)}
+                          >
+                            <Trash2 size={12} />
+                          </IconButton>
+                        )}
+                      </HStack>
+                    </HStack>
+
+                    {isEditing ? (
+                      <VStack align="stretch" gap={3} mt={2}>
+                        <Textarea 
+                          size="sm" 
+                          value={editText} 
+                          onChange={(e) => setEditText(e.target.value)}
+                          bg="bg.panel"
+                          autoFocus
+                          borderRadius="lg"
+                        />
+                        <HStack gap={2}>
+                          <Button size="xs" colorPalette="blue" onClick={() => handleUpdate(comment.id)} loading={isUpdating}>
+                            <Check size={12} /> Save Changes
+                          </Button>
+                          <Button size="xs" variant="ghost" onClick={() => setEditingCommentId(null)}>
+                            Cancel
+                          </Button>
+                        </HStack>
+                      </VStack>
+                    ) : (
+                      <Text fontSize="sm" color="fg.emphasized" lineHeight="relaxed">
+                        {comment.text}
+                      </Text>
+                    )}
+                  </VStack>
                 </HStack>
-              </HStack>
-              <Text fontSize="sm" color="fg.emphasized">{comment.text}</Text>
+                {index < comments.length - 1 && <Separator variant="dashed" opacity={0.5} />}
+              </Box>
+            );
+          })}
+          {comments.length === 0 && (
+            <Box py={8} textAlign="center" borderStyle="dashed" borderWidth="1px" borderRadius="xl" borderColor="border.subtle">
+              <Text fontSize="sm" color="fg.subtle">No comments yet. Start the conversation!</Text>
             </Box>
-          </Box>
-        ))}
-        {comments.length === 0 && (
-          <Box py={2} textAlign="center">
-            <Text fontSize="sm" color="fg.subtle" fontStyle="italic">No comments yet. Be the first to share your thoughts!</Text>
-          </Box>
-        )}
+          )}
+        </VStack>
       </VStack>
 
-      <VStack 
-        as="form" 
-        align="stretch" 
-        gap={3} 
-        p={4} 
-        bg="bg.subtle" 
-        borderRadius="xl"
-        onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
-      >
-        <Text fontSize="xs" fontWeight="bold" color="fg.muted" textTransform="uppercase" letterSpacing="wider">
-          Add a comment
-        </Text>
-        <Stack direction={{ base: "column", md: "row" }} gap={3}>
-          <Field flex={1}>
-            <Input 
-              size="sm" 
-              type="email"
-              bg="bg.panel"
-              placeholder="Your email" 
-              value={authorEmail} 
-              onChange={(e) => setAuthorEmail(e.target.value)}
-              required
-            />
-          </Field>
-          <Field flex={2}>
-            <HStack gap={2} width="full">
+      {/* Modern Comment Form */}
+      {isFormOpen ? (
+        <VStack 
+          as="form" 
+          align="stretch" 
+          gap={4} 
+          p={5} 
+          bg="bg.panel" 
+          borderWidth="1px"
+          borderColor="border.subtle"
+          borderRadius="2xl"
+          shadow="sm"
+          onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+        >
+          <VStack align="stretch" gap={3}>
+            <HStack gap={3}>
+              <Avatar.Root size="xs">
+                <Avatar.Fallback name={authorEmail} />
+              </Avatar.Root>
               <Input 
                 size="sm" 
-                bg="bg.panel"
-                placeholder="What's on your mind?" 
+                type="email"
+                variant="flushed"
+                placeholder="Your email address" 
+                value={authorEmail} 
+                onChange={(e) => setAuthorEmail(e.target.value)}
+                required
+                px={2}
+              />
+            </HStack>
+            
+            <Field>
+              <Textarea 
+                size="sm" 
+                bg="bg.subtle"
+                border="none"
+                _focus={{ bg: "bg.panel", ring: "1px", ringColor: "blue.500" }}
+                placeholder="Write a comment..." 
                 value={text} 
                 onChange={(e) => setText(e.target.value)}
                 required
+                rows={3}
+                borderRadius="xl"
+                autoFocus
               />
+            </Field>
+            
+            <HStack justify="flex-end" gap={3}>
+              <Button size="sm" variant="ghost" onClick={() => setIsFormOpen(false)}>
+                Cancel
+              </Button>
               <Button 
                 size="sm" 
                 colorPalette="blue" 
                 loading={isSubmitting}
                 onClick={handleSubmit}
                 disabled={!text || !authorEmail}
-                px={4}
+                px={6}
+                borderRadius="full"
+                gap={2}
               >
+                Post Comment
                 <Send size={14} />
               </Button>
             </HStack>
-          </Field>
-        </Stack>
-      </VStack>
+          </VStack>
+        </VStack>
+      ) : null}
     </VStack>
   );
 };

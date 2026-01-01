@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Container, Heading, HStack, VStack, SimpleGrid, Box, Text, Spinner, Center, Separator } from '@chakra-ui/react';
+import { toaster } from '@/components/ui/toaster';
+import { Comment, Idea } from '@/lib/store';
+import { Box, Center, Container, Heading, SimpleGrid, Spinner, Text, VStack } from '@chakra-ui/react';
 import { Lightbulb } from 'lucide-react';
-import { Idea, Comment } from '@/lib/store';
+import { useEffect, useState } from 'react';
 import { IdeaCard } from './IdeaCard';
 import { IdeaForm } from './IdeaForm';
-import { toaster, Toaster } from '@/components/ui/toaster';
 
 interface IdeaBoardProps {
   isAdmin?: boolean;
@@ -17,6 +17,7 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [votedIdeas, setVotedIdeas] = useState<Set<string>>(new Set());
+  const [userEmail, setUserEmail] = useState<string>('');
 
   const fetchIdeas = async () => {
     try {
@@ -35,6 +36,10 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
     const storedVotes = localStorage.getItem('votedIdeas');
     if (storedVotes) {
       setVotedIdeas(new Set(JSON.parse(storedVotes)));
+    }
+    const storedEmail = localStorage.getItem('userEmail');
+    if (storedEmail) {
+      setUserEmail(storedEmail);
     }
   }, []);
 
@@ -71,7 +76,11 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
 
   const handleDeleteIdea = async (id: string) => {
     if (!confirm('Are you sure you want to delete this idea?')) return;
-    const res = await fetch(`/api/ideas/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/ideas/${id}`, { 
+      method: 'DELETE',
+      body: JSON.stringify({ authorEmail: userEmail }),
+      headers: { 'Content-Type': 'application/json' },
+    });
     if (res.ok) {
       setIdeas(ideas.filter(i => i.id !== id));
       toaster.create({ title: "Idea deleted", type: "success" });
@@ -88,7 +97,11 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
   };
 
   const handleDeleteComment = async (ideaId: string, commentId: string) => {
-    const res = await fetch(`/api/ideas/${ideaId}/comment/${commentId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/ideas/${ideaId}/comment/${commentId}`, { 
+      method: 'DELETE',
+      body: JSON.stringify({ authorEmail: userEmail }),
+      headers: { 'Content-Type': 'application/json' },
+    });
     if (res.ok) {
       setIdeas(ideas.map(i => 
         i.id === ideaId ? { ...i, comments: i.comments.filter(c => c.id !== commentId) } : i
@@ -106,11 +119,44 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
     if (res.ok) {
       const newIdea = await res.json();
       setIdeas([newIdea, ...ideas]);
+      setUserEmail(authorEmail);
+      localStorage.setItem('userEmail', authorEmail);
       toaster.create({
         title: "Idea submitted!",
         description: "Your idea has been shared with everyone.",
         type: "success",
       });
+    }
+  };
+
+  const handleUpdateIdea = async (id: string, title: string, description: string) => {
+    const res = await fetch(`/api/ideas/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title, description, authorEmail: userEmail }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.ok) {
+      const updatedIdea = await res.json();
+      setIdeas(ideas.map(i => i.id === id ? { ...i, ...updatedIdea } : i));
+      toaster.create({ title: "Idea updated", type: "success" });
+    }
+  };
+
+  const handleUpdateComment = async (ideaId: string, commentId: string, text: string) => {
+    const res = await fetch(`/api/ideas/${ideaId}/comment/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ text, authorEmail: userEmail }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.ok) {
+      const updatedComment = await res.json();
+      setIdeas(ideas.map(i => 
+        i.id === ideaId ? { 
+          ...i, 
+          comments: i.comments.map(c => c.id === commentId ? updatedComment : c) 
+        } : i
+      ));
+      toaster.create({ title: "Comment updated", type: "success" });
     }
   };
 
@@ -138,7 +184,7 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
               Collaborate and upvote the best ideas for things that should exist.
             </Text>
           </VStack>
-          <IdeaForm onSubmit={handleSubmit} />
+          <IdeaForm onSubmit={handleSubmit} initialEmail={userEmail} />
         </VStack>
 
         <VStack align="stretch" gap={8}>
@@ -149,11 +195,20 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
                 idea={idea} 
                 hasVoted={votedIdeas.has(idea.id)}
                 onVote={handleVote} 
-                onCommentAdded={handleCommentAdded}
+                onCommentAdded={(ideaId, comment) => {
+                  handleCommentAdded(ideaId, comment);
+                  if (comment.authorEmail) {
+                    setUserEmail(comment.authorEmail);
+                    localStorage.setItem('userEmail', comment.authorEmail);
+                  }
+                }}
                 isAdmin={isAdmin}
+                userEmail={userEmail}
                 onDelete={handleDeleteIdea}
                 onResetVotes={handleResetVotes}
                 onDeleteComment={handleDeleteComment}
+                onUpdateIdea={handleUpdateIdea}
+                onUpdateComment={handleUpdateComment}
               />
             ))}
           </SimpleGrid>

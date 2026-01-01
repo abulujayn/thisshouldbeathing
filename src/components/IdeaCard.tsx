@@ -2,13 +2,14 @@
 'use client';
 
 import { Box, Button, Heading, HStack, Text, VStack, IconButton, Badge } from '@chakra-ui/react';
-import { ThumbsUp, MessageSquare, MoreVertical, Trash2, RotateCcw } from 'lucide-react';
+import { ThumbsUp, MessageSquare, MoreVertical, Trash2, RotateCcw, Pencil, Check, X } from 'lucide-react';
 import { Idea, Comment } from '@/lib/store';
 import { useState } from 'react';
 import { CommentSection } from './CommentSection';
 import { Tooltip } from '@/components/ui/tooltip';
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from '@/components/ui/menu';
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils';
+import { Input, Textarea } from '@chakra-ui/react';
 
 interface IdeaCardProps {
   idea: Idea;
@@ -16,9 +17,12 @@ interface IdeaCardProps {
   onVote: (id: string, action: 'vote' | 'unvote') => void;
   onCommentAdded: (ideaId: string, comment: Comment) => void;
   isAdmin?: boolean;
+  userEmail?: string;
   onDelete?: (id: string) => void;
   onResetVotes?: (id: string) => void;
   onDeleteComment?: (ideaId: string, commentId: string) => void;
+  onUpdateIdea?: (id: string, title: string, description: string) => Promise<void>;
+  onUpdateComment?: (ideaId: string, commentId: string, text: string) => Promise<void>;
 }
 
 export const IdeaCard = ({ 
@@ -27,18 +31,35 @@ export const IdeaCard = ({
   onVote, 
   onCommentAdded,
   isAdmin,
+  userEmail,
   onDelete,
   onResetVotes,
-  onDeleteComment
+  onDeleteComment,
+  onUpdateIdea,
+  onUpdateComment
 }: IdeaCardProps) => {
   const [isVoting, setIsVoting] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(idea.title);
+  const [editDescription, setEditDescription] = useState(idea.description);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleVote = async () => {
     setIsVoting(true);
     await onVote(idea.id, hasVoted ? 'unvote' : 'vote');
     setIsVoting(false);
   };
+
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    await onUpdateIdea?.(idea.id, editTitle, editDescription);
+    setIsUpdating(false);
+    setIsEditing(false);
+  };
+
+  const isAuthor = userEmail && idea.authorEmail === userEmail;
+  const canManage = isAdmin || isAuthor;
 
   return (
     <Box 
@@ -74,35 +95,77 @@ export const IdeaCard = ({
         <VStack align="stretch" gap={4} flex={1}>
           <HStack justify="space-between" align="start">
             <VStack align="start" gap={2} flex={1}>
-              <Heading size="md" lineHeight="tight">{idea.title}</Heading>
-              <Text color="fg.muted" fontSize="md" lineHeight="relaxed">
-                {idea.description}
-              </Text>
+              {isEditing ? (
+                <VStack align="stretch" gap={3} width="full">
+                  <Input 
+                    value={editTitle} 
+                    onChange={(e) => setEditTitle(e.target.value)} 
+                    size="sm"
+                    bg="bg.subtle"
+                    fontWeight="bold"
+                  />
+                  <Textarea 
+                    value={editDescription} 
+                    onChange={(e) => setEditDescription(e.target.value)} 
+                    size="sm"
+                    bg="bg.subtle"
+                    rows={3}
+                  />
+                  <HStack gap={2}>
+                    <Button size="xs" colorPalette="blue" onClick={handleUpdate} loading={isUpdating}>
+                      <Check size={14} /> Save
+                    </Button>
+                    <Button size="xs" variant="ghost" onClick={() => {
+                      setIsEditing(false);
+                      setEditTitle(idea.title);
+                      setEditDescription(idea.description);
+                    }}>
+                      <X size={14} /> Cancel
+                    </Button>
+                  </HStack>
+                </VStack>
+              ) : (
+                <>
+                  <Heading size="md" lineHeight="tight">{idea.title}</Heading>
+                  <Text color="fg.muted" fontSize="md" lineHeight="relaxed">
+                    {idea.description}
+                  </Text>
+                </>
+              )}
             </VStack>
             
-            {isAdmin && (
+            {canManage && (
               <MenuRoot>
                 <MenuTrigger asChild>
-                  <IconButton variant="ghost" size="sm" aria-label="Admin actions" mt={-1}>
+                  <IconButton variant="ghost" size="sm" aria-label="Actions" mt={-1}>
                     <MoreVertical size={18} />
                   </IconButton>
                 </MenuTrigger>
                 <MenuContent>
                   <MenuItem 
-                    value="reset" 
-                    onClick={() => onResetVotes?.(idea.id)}
-                    color="orange.500"
+                    value="edit" 
+                    onClick={() => setIsEditing(true)}
                   >
-                    <RotateCcw size={14} />
-                    <Text ms={2}>Reset Votes ({idea.votes})</Text>
+                    <Pencil size={14} />
+                    <Text ms={2}>Edit</Text>
                   </MenuItem>
+                  {isAdmin && (
+                    <MenuItem 
+                      value="reset" 
+                      onClick={() => onResetVotes?.(idea.id)}
+                      color="orange.500"
+                    >
+                      <RotateCcw size={14} />
+                      <Text ms={2}>Reset Votes ({idea.votes})</Text>
+                    </MenuItem>
+                  )}
                   <MenuItem 
                     value="delete" 
                     onClick={() => onDelete?.(idea.id)}
                     color="red.500"
                   >
                     <Trash2 size={14} />
-                    <Text ms={2}>Delete Idea</Text>
+                    <Text ms={2}>Delete</Text>
                   </MenuItem>
                 </MenuContent>
               </MenuRoot>
@@ -153,7 +216,9 @@ export const IdeaCard = ({
                 comments={idea.comments} 
                 onCommentAdded={(c) => onCommentAdded(idea.id, c)}
                 isAdmin={isAdmin}
+                userEmail={userEmail}
                 onDeleteComment={(commentId) => onDeleteComment?.(idea.id, commentId)}
+                onUpdateComment={onUpdateComment ? (commentId, text) => onUpdateComment(idea.id, commentId, text) : undefined}
               />
             </Box>
           )}
