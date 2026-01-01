@@ -73,5 +73,5 @@
 ## General advices
 
 *   Once finished making changes, run `npm run lint` and fix any errors or warnings that come up. Then run `npm run build` to confirm the project builds successfully.
-*   Once finished making changes, come up with a commit message for the changes. The first word should be a verb such as "add" or "fix" or "change" or "update" and keep the commit message lowercase.
+*   when making git commits, the first word should be a verb such as "add" or "fix" or "change" or "update" and keep the commit message lowercase.
 *   Any references to the project's name, "This should be a thing" should only capitalise "this" and not the rest of the words.
