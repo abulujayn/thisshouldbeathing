@@ -3,13 +3,17 @@
 
 import { Box, Container, HStack, Heading, Spacer } from '@chakra-ui/react';
 import { ColorModeButton } from '@/components/ui/color-mode';
-import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 
 interface HeaderProps {
   onAdminTrigger?: () => void;
   isAdmin?: boolean;
   onLogout?: () => void;
+}
+
+interface CaretAPI {
+  caretRangeFromPoint?: (x: number, y: number) => Range | null;
+  caretPositionFromPoint?: (x: number, y: number) => { offset: number; offsetNode: Node } | null;
 }
 
 export const Header = ({ onAdminTrigger, isAdmin, onLogout }: HeaderProps) => {
@@ -26,15 +30,16 @@ export const Header = ({ onAdminTrigger, isAdmin, onLogout }: HeaderProps) => {
     let textNode: Node | null = null;
     
     if (typeof document !== 'undefined') {
-      if ((document as any).caretRangeFromPoint) {
-        const range = (document as any).caretRangeFromPoint(e.clientX, e.clientY);
+      const doc = document as unknown as CaretAPI;
+      if (doc.caretRangeFromPoint) {
+        const range = doc.caretRangeFromPoint(e.clientX, e.clientY);
         if (range) {
           offset = range.startOffset;
           textNode = range.startContainer;
         }
       } 
-      else if ((document as any).caretPositionFromPoint) {
-        const position = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
+      else if (doc.caretPositionFromPoint) {
+        const position = doc.caretPositionFromPoint(e.clientX, e.clientY);
         if (position) {
           offset = position.offset;
           textNode = position.offsetNode;

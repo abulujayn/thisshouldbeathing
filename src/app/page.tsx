@@ -2,7 +2,7 @@
 
 import { IdeaBoard } from "@/components/IdeaBoard";
 import { Header } from "@/components/Header";
-import { Box, Button, Container, VStack, Spacer, Text } from "@chakra-ui/react";
+import { Box, Button, VStack, Text } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { toaster, Toaster } from "@/components/ui/toaster";
 import { DialogContent, DialogHeader, DialogRoot, DialogTitle, DialogBody } from "@/components/ui/dialog";

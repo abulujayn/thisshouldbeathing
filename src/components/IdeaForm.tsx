@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button, Input, Textarea, VStack, HStack } from '@chakra-ui/react';
+import { useState } from 'react';
+import { Button, Input, Textarea, VStack } from '@chakra-ui/react';
 import { Plus } from 'lucide-react';
 import {
   DialogBody,
@@ -24,14 +24,16 @@ export const IdeaForm = ({ onSubmit, initialEmail }: IdeaFormProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [authorEmail, setAuthorEmail] = useState(initialEmail || '');
+  const [prevInitialEmail, setPrevInitialEmail] = useState(initialEmail);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
+  if (initialEmail !== prevInitialEmail) {
+    setPrevInitialEmail(initialEmail);
     if (initialEmail) {
       setAuthorEmail(initialEmail);
     }
-  }, [initialEmail]);
+  }
 
   const handleSubmit = async () => {
     if (!title || !authorEmail) return;

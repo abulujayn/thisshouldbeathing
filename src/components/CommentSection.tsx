@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { VStack, Text, Input, Button, HStack, Box, Stack, IconButton, Textarea, Separator, Avatar } from '@chakra-ui/react';
-import { Trash2, Send, Pencil, Check, X, MessageSquare } from 'lucide-react';
+import { useState } from 'react';
+import { VStack, Text, Input, Button, HStack, Box, IconButton, Textarea, Separator, Avatar } from '@chakra-ui/react';
+import { Trash2, Send, Pencil, Check, MessageSquare } from 'lucide-react';
 import { Comment } from '@/lib/store';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Field } from '@/components/ui/field';
@@ -29,11 +29,19 @@ export const CommentSection = ({
 }: CommentSectionProps) => {
   const [text, setText] = useState('');
   const [authorEmail, setAuthorEmail] = useState(userEmail || '');
+  const [prevUserEmail, setPrevUserEmail] = useState(userEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  if (userEmail !== prevUserEmail) {
+    setPrevUserEmail(userEmail);
+    if (userEmail) {
+      setAuthorEmail(userEmail);
+    }
+  }
 
   const handleUpdate = async (commentId: string) => {
     setIsUpdating(true);
@@ -41,12 +49,6 @@ export const CommentSection = ({
     setIsUpdating(false);
     setEditingCommentId(null);
   };
-
-  useEffect(() => {
-    if (userEmail) {
-      setAuthorEmail(userEmail);
-    }
-  }, [userEmail]);
 
   const handleSubmit = async () => {
     if (!text || !authorEmail) return;
