@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getIdeas, saveIdeas } from '@/lib/store';
 import { isAuthenticated } from '@/lib/admin';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
+
+async function getUserEmail() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value;
+  const userPayload = token ? await verifyToken(token) : null;
+  if (userPayload && typeof userPayload === 'object' && 'email' in userPayload) {
+    return (userPayload as { email: string }).email;
+  }
+  return null;
+}
 
 export async function PATCH(
   request: Request,
@@ -8,7 +20,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { title, description, authorEmail } = body;
+  const { title, description } = body;
 
   const ideas = await getIdeas();
   const index = ideas.findIndex((i) => i.id === id);
@@ -18,7 +30,8 @@ export async function PATCH(
   }
 
   const idea = ideas[index];
-  const isAuthorized = (await isAuthenticated()) || idea.authorEmail === authorEmail;
+  const userEmail = await getUserEmail();
+  const isAuthorized = (await isAuthenticated()) || (userEmail && idea.authorEmail === userEmail);
 
   if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,9 +49,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.json().catch(() => ({}));
-  const { authorEmail } = body;
-
+  
   const ideas = await getIdeas();
   const idea = ideas.find((i) => i.id === id);
   
@@ -46,7 +57,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const isAuthorized = (await isAuthenticated()) || idea.authorEmail === authorEmail;
+  const userEmail = await getUserEmail();
+  const isAuthorized = (await isAuthenticated()) || (userEmail && idea.authorEmail === userEmail);
+  
   if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

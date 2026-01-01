@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getIdeas, saveIdeas } from '@/lib/store';
 import { isAuthenticated } from '@/lib/admin';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
+
+async function getUserEmail() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value;
+  const userPayload = token ? await verifyToken(token) : null;
+  if (userPayload && typeof userPayload === 'object' && 'email' in userPayload) {
+    return (userPayload as { email: string }).email;
+  }
+  return null;
+}
 
 export async function PATCH(
   request: Request,
@@ -8,7 +20,7 @@ export async function PATCH(
 ) {
   const { id, commentId } = await params;
   const body = await request.json();
-  const { text, authorEmail } = body;
+  const { text } = body;
 
   const ideas = await getIdeas();
   const idea = ideas.find((i) => i.id === id);
@@ -21,7 +33,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
   }
 
-  const isAuthorized = (await isAuthenticated()) || comment.authorEmail === authorEmail;
+  const userEmail = await getUserEmail();
+  const isAuthorized = (await isAuthenticated()) || (userEmail && comment.authorEmail === userEmail);
+
   if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -37,8 +51,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   const { id, commentId } = await params;
-  const body = await request.json().catch(() => ({}));
-  const { authorEmail } = body;
 
   const ideas = await getIdeas();
   const idea = ideas.find((i) => i.id === id);
@@ -51,7 +63,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
   }
 
-  const isAuthorized = (await isAuthenticated()) || comment.authorEmail === authorEmail;
+  const userEmail = await getUserEmail();
+  const isAuthorized = (await isAuthenticated()) || (userEmail && comment.authorEmail === userEmail);
+
   if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

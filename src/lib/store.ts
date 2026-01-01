@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { getRedisClient } from './redis';
+import { getAdminData } from './admin';
 
 export interface Comment {
   id: string;
@@ -59,6 +60,11 @@ export async function getIdeas(): Promise<Idea[]> {
 }
 
 export async function saveIdeas(ideas: Idea[]) {
+  const adminData = await getAdminData();
+  if (!adminData?.credential) {
+    throw new Error('Cannot save data until admin is setup');
+  }
+
   try {
     const client = await getRedisClient();
     const key = await getIdeasKey();

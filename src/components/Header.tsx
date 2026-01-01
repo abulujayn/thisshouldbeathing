@@ -1,9 +1,17 @@
-
 'use client';
 
-import { Box, Container, HStack, Heading, Spacer } from '@chakra-ui/react';
+import { Box, Container, HStack, Heading, Spacer, Button, Text } from '@chakra-ui/react';
 import { ColorModeButton } from '@/components/ui/color-mode';
 import { useState, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { LoginModal } from '@/components/LoginModal';
+import { Avatar } from '@/components/ui/avatar';
+import {
+  MenuContent,
+  MenuItem,
+  MenuRoot,
+  MenuTrigger,
+} from "@/components/ui/menu"
 
 interface HeaderProps {
   onAdminTrigger?: () => void;
@@ -16,13 +24,15 @@ interface CaretAPI {
   caretPositionFromPoint?: (x: number, y: number) => { offset: number; offsetNode: Node } | null;
 }
 
-export const Header = ({ onAdminTrigger, isAdmin, onLogout }: HeaderProps) => {
+export const Header = ({ onAdminTrigger, isAdmin, onLogout: onAdminLogout }: HeaderProps) => {
+  const { user, login, logout: userLogout } = useAuth();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTitleClick = (e: React.MouseEvent<HTMLHeadingElement>) => {
     if (isAdmin) {
-      onLogout?.();
+      onAdminLogout?.();
       return;
     }
 
@@ -93,9 +103,35 @@ export const Header = ({ onAdminTrigger, isAdmin, onLogout }: HeaderProps) => {
             This should be a thing
           </Heading>
           <Spacer />
+          {user ? (
+             <MenuRoot>
+              <MenuTrigger asChild>
+                <Button variant="ghost" size="sm" borderRadius="full" px={0}>
+                  <Avatar name={user.email} size="sm" />
+                </Button>
+              </MenuTrigger>
+              <MenuContent>
+                <MenuItem value="email" disabled>
+                   <Text fontSize="xs" color="fg.muted">{user.email}</Text>
+                </MenuItem>
+                <MenuItem value="logout" color="red.500" onClick={userLogout}>
+                  Logout
+                </MenuItem>
+              </MenuContent>
+            </MenuRoot>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setIsLoginOpen(true)}>
+              Login
+            </Button>
+          )}
           <ColorModeButton />
         </HStack>
       </Container>
+      <LoginModal 
+        isOpen={isLoginOpen} 
+        onOpenChange={setIsLoginOpen} 
+        onLoginSuccess={login} 
+      />
     </Box>
   );
 };

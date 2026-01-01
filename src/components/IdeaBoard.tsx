@@ -1,4 +1,3 @@
-
 'use client';
 
 import { toaster } from '@/components/ui/toaster';
@@ -9,17 +8,20 @@ import { useEffect, useState, useMemo } from 'react';
 import { IdeaCard } from './IdeaCard';
 import { IdeaForm } from './IdeaForm';
 import { SegmentedControl } from './ui/segmented-control';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface IdeaBoardProps {
   isAdmin?: boolean;
 }
 
 export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
+  const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [votedIdeas, setVotedIdeas] = useState<Set<string>>(new Set());
-  const [userEmail, setUserEmail] = useState<string>('');
   const [sortBy, setSortBy] = useState<'newest' | 'votes'>('newest');
+
+  const userEmail = user?.email || '';
 
   const fetchIdeas = async () => {
     try {
@@ -50,10 +52,6 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
     const storedVotes = localStorage.getItem('votedIdeas');
     if (storedVotes) {
       setVotedIdeas(new Set(JSON.parse(storedVotes)));
-    }
-    const storedEmail = localStorage.getItem('userEmail');
-    if (storedEmail) {
-      setUserEmail(storedEmail);
     }
   }, []);
 
@@ -133,8 +131,6 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
     if (res.ok) {
       const newIdea = await res.json();
       setIdeas([newIdea, ...ideas]);
-      setUserEmail(authorEmail);
-      localStorage.setItem('userEmail', authorEmail);
       toaster.create({
         title: "Idea submitted!",
         description: "Your idea has been shared with everyone.",
@@ -198,7 +194,7 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
               Collaborate and upvote the best ideas for things that should exist.
             </Text>
           </VStack>
-          <IdeaForm onSubmit={handleSubmit} initialEmail={userEmail} />
+          <IdeaForm onSubmit={handleSubmit} />
         </VStack>
 
         <VStack align="stretch" gap={8}>
@@ -237,13 +233,7 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
                 idea={idea} 
                 hasVoted={votedIdeas.has(idea.id)}
                 onVote={handleVote} 
-                onCommentAdded={(ideaId, comment) => {
-                  handleCommentAdded(ideaId, comment);
-                  if (comment.authorEmail) {
-                    setUserEmail(comment.authorEmail);
-                    localStorage.setItem('userEmail', comment.authorEmail);
-                  }
-                }}
+                onCommentAdded={handleCommentAdded}
                 isAdmin={isAdmin}
                 userEmail={userEmail}
                 onDelete={handleDeleteIdea}

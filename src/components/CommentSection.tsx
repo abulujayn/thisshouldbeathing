@@ -1,19 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { VStack, Text, Input, Button, HStack, Box, IconButton, Textarea, Separator, Avatar } from '@chakra-ui/react';
+import { VStack, Text, Button, HStack, Box, IconButton, Textarea, Separator } from '@chakra-ui/react';
 import { Trash2, Send, Pencil, Check, MessageSquare } from 'lucide-react';
 import { Comment } from '@/lib/store';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Field } from '@/components/ui/field';
 import { getRelativeTime, getFullTimestamp } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { LoginModal } from './LoginModal';
+import { Avatar } from '@/components/ui/avatar';
 
 interface CommentSectionProps {
   ideaId: string;
   comments: Comment[];
   onCommentAdded: (newComment: Comment) => void;
   isAdmin?: boolean;
-  userEmail?: string;
+  userEmail?: string; 
   onDeleteComment?: (commentId: string) => void;
   onUpdateComment?: (commentId: string, text: string) => Promise<void>;
 }
@@ -23,25 +26,17 @@ export const CommentSection = ({
   comments, 
   onCommentAdded, 
   isAdmin, 
-  userEmail,
   onDeleteComment,
   onUpdateComment
 }: CommentSectionProps) => {
+  const { user } = useAuth();
   const [text, setText] = useState('');
-  const [authorEmail, setAuthorEmail] = useState(userEmail || '');
-  const [prevUserEmail, setPrevUserEmail] = useState(userEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-
-  if (userEmail !== prevUserEmail) {
-    setPrevUserEmail(userEmail);
-    if (userEmail) {
-      setAuthorEmail(userEmail);
-    }
-  }
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const handleUpdate = async (commentId: string) => {
     setIsUpdating(true);
@@ -51,11 +46,11 @@ export const CommentSection = ({
   };
 
   const handleSubmit = async () => {
-    if (!text || !authorEmail) return;
+    if (!text || !user?.email) return;
     setIsSubmitting(true);
     const res = await fetch(`/api/ideas/${ideaId}/comment`, {
       method: 'POST',
-      body: JSON.stringify({ text, authorEmail }),
+      body: JSON.stringify({ text, authorEmail: user.email }),
       headers: { 'Content-Type': 'application/json' },
     });
     if (res.ok) {
@@ -65,6 +60,14 @@ export const CommentSection = ({
       setIsFormOpen(false);
     }
     setIsSubmitting(false);
+  };
+
+  const handleAddCommentClick = () => {
+      if (user) {
+          setIsFormOpen(true);
+      } else {
+          setIsLoginOpen(true);
+      }
   };
 
   return (
@@ -85,7 +88,7 @@ export const CommentSection = ({
               size="xs" 
               variant="ghost" 
               colorPalette="blue"
-              onClick={() => setIsFormOpen(true)}
+              onClick={handleAddCommentClick}
               fontWeight="bold"
             >
               Add Comment
@@ -95,16 +98,14 @@ export const CommentSection = ({
 
         <VStack align="stretch" gap={0}>
           {comments.map((comment, index) => {
-            const isAuthor = userEmail && comment.authorEmail === userEmail;
+            const isAuthor = user?.email && comment.authorEmail === user.email;
             const canManage = isAdmin || isAuthor;
             const isEditing = editingCommentId === comment.id;
 
             return (
               <Box key={comment.id}>
                 <HStack align="start" gap={4} py={4}>
-                  <Avatar.Root size="sm">
-                    <Avatar.Fallback name={comment.authorEmail} />
-                  </Avatar.Root>
+                  <Avatar name={comment.authorEmail} size="sm" />
                   <VStack align="stretch" gap={1} flex={1}>
                     <HStack justify="space-between" align="center">
                       <HStack gap={2}>
@@ -203,19 +204,8 @@ export const CommentSection = ({
         >
           <VStack align="stretch" gap={3}>
             <HStack gap={3}>
-              <Avatar.Root size="xs">
-                <Avatar.Fallback name={authorEmail} />
-              </Avatar.Root>
-              <Input 
-                size="sm" 
-                type="email"
-                variant="flushed"
-                placeholder="Your email address" 
-                value={authorEmail} 
-                onChange={(e) => setAuthorEmail(e.target.value)}
-                required
-                px={2}
-              />
+              <Avatar name={user?.email} size="xs" />
+              <Text fontSize="sm" fontWeight="medium">{user?.email}</Text>
             </HStack>
             
             <Field>
@@ -243,7 +233,7 @@ export const CommentSection = ({
                 colorPalette="blue" 
                 loading={isSubmitting}
                 onClick={handleSubmit}
-                disabled={!text || !authorEmail}
+                disabled={!text}
                 px={6}
                 borderRadius="full"
                 gap={2}
@@ -255,6 +245,15 @@ export const CommentSection = ({
           </VStack>
         </VStack>
       ) : null}
+      
+      <LoginModal 
+        isOpen={isLoginOpen} 
+        onOpenChange={setIsLoginOpen} 
+        onLoginSuccess={() => {
+            setIsLoginOpen(false);
+            setIsFormOpen(true);
+        }} 
+      />
     </VStack>
   );
 };
