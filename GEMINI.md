@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-"This Should Be A Thing" is a modern Idea Board application built with **Next.js 16**. It allows users to propose ideas, vote on them, and discuss them via comments. The application features a secure, passwordless admin interface using **WebAuthn (Passkeys)**.
+"This should be a thing" is a modern Idea Board application built with **Next.js 16**. It allows users to propose ideas, vote on them, and discuss them via comments. The application features a secure, passwordless admin interface using **WebAuthn (Passkeys)**.
 
 ## Key Features
 

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     // Send email
     const { error } = await resend.emails.send({
-      from: process.env.SYSTEM_EMAIL || 'This Should Be A Thing <onboarding@resend.dev>',
+      from: process.env.SYSTEM_EMAIL || 'This should be a thing <onboarding@resend.dev>',
       to: [email],
       subject: 'Your Verification Code',
       html: `<p>Your verification code is: <strong>${code}</strong></p><p>It will expire in 10 minutes.</p>`,
