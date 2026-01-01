@@ -8,7 +8,11 @@ import { IdeaCard } from './IdeaCard';
 import { IdeaForm } from './IdeaForm';
 import { toaster, Toaster } from '@/components/ui/toaster';
 
-export const IdeaBoard = () => {
+interface IdeaBoardProps {
+  isAdmin?: boolean;
+}
+
+export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [votedIdeas, setVotedIdeas] = useState<Set<string>>(new Set());
@@ -64,6 +68,34 @@ export const IdeaBoard = () => {
     });
   };
 
+  const handleDeleteIdea = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this idea?')) return;
+    const res = await fetch(`/api/ideas/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setIdeas(ideas.filter(i => i.id !== id));
+      toaster.create({ title: "Idea deleted", type: "success" });
+    }
+  };
+
+  const handleResetVotes = async (id: string) => {
+    const res = await fetch(`/api/ideas/${id}/reset-votes`, { method: 'POST' });
+    if (res.ok) {
+      const updatedIdea = await res.json();
+      setIdeas(ideas.map(i => i.id === id ? { ...i, votes: updatedIdea.votes } : i));
+      toaster.create({ title: "Votes reset", type: "success" });
+    }
+  };
+
+  const handleDeleteComment = async (ideaId: string, commentId: string) => {
+    const res = await fetch(`/api/ideas/${ideaId}/comment/${commentId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setIdeas(ideas.map(i => 
+        i.id === ideaId ? { ...i, comments: i.comments.filter(c => c.id !== commentId) } : i
+      ));
+      toaster.create({ title: "Comment deleted", type: "success" });
+    }
+  };
+
   const handleSubmit = async (title: string, description: string) => {
     const res = await fetch('/api/ideas', {
       method: 'POST',
@@ -91,7 +123,6 @@ export const IdeaBoard = () => {
 
   return (
     <Container maxW="4xl" py={12}>
-      <Toaster />
       <VStack gap={12} align="stretch">
         <VStack gap={4} align="center">
           <Heading size="3xl" textAlign="center">This should be a thing</Heading>
@@ -107,6 +138,10 @@ export const IdeaBoard = () => {
               hasVoted={votedIdeas.has(idea.id)}
               onVote={handleVote} 
               onCommentAdded={handleCommentAdded}
+              isAdmin={isAdmin}
+              onDelete={handleDeleteIdea}
+              onResetVotes={handleResetVotes}
+              onDeleteComment={handleDeleteComment}
             />
           ))}
         </SimpleGrid>

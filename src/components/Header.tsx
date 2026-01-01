@@ -6,12 +6,22 @@ import { ColorModeButton } from '@/components/ui/color-mode';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 
-export const Header = () => {
-  const router = useRouter();
+interface HeaderProps {
+  onAdminTrigger?: () => void;
+  isAdmin?: boolean;
+  onLogout?: () => void;
+}
+
+export const Header = ({ onAdminTrigger, isAdmin, onLogout }: HeaderProps) => {
   const [clickCount, setClickCount] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTitleClick = (e: React.MouseEvent<HTMLHeadingElement>) => {
+    if (isAdmin) {
+      onLogout?.();
+      return;
+    }
+
     let offset = -1;
     let textNode: Node | null = null;
     
@@ -52,7 +62,7 @@ export const Header = () => {
         }
 
         if (nextCount === 5) {
-          router.push('/admin');
+          onAdminTrigger?.();
           setClickCount(0);
         } else {
           timerRef.current = setTimeout(() => {
@@ -76,6 +86,8 @@ export const Header = () => {
             onClick={handleTitleClick}
             cursor="default"
             pointerEvents="all"
+            color={isAdmin ? "red.600" : "inherit"}
+            transition="color 0.2s"
           >
             This should be a thing
           </Heading>
