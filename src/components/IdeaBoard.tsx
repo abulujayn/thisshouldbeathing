@@ -3,11 +3,12 @@
 
 import { toaster } from '@/components/ui/toaster';
 import { Comment, Idea } from '@/lib/store';
-import { Box, Center, Container, Heading, SimpleGrid, Spinner, Text, VStack } from '@chakra-ui/react';
-import { Lightbulb } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Box, Center, Container, Heading, SimpleGrid, Spinner, Text, VStack, HStack } from '@chakra-ui/react';
+import { Lightbulb, Clock, TrendingUp } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 import { IdeaCard } from './IdeaCard';
 import { IdeaForm } from './IdeaForm';
+import { SegmentedControl } from './ui/segmented-control';
 
 interface IdeaBoardProps {
   isAdmin?: boolean;
@@ -18,6 +19,7 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
   const [loading, setLoading] = useState(true);
   const [votedIdeas, setVotedIdeas] = useState<Set<string>>(new Set());
   const [userEmail, setUserEmail] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'newest' | 'votes'>('newest');
 
   const fetchIdeas = async () => {
     try {
@@ -30,6 +32,18 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
       setLoading(false);
     }
   };
+
+  const sortedIdeas = useMemo(() => {
+    return [...ideas].sort((a, b) => {
+      if (sortBy === 'votes') {
+        if (b.votes !== a.votes) {
+          return b.votes - a.votes;
+        }
+        return b.createdAt - a.createdAt;
+      }
+      return b.createdAt - a.createdAt;
+    });
+  }, [ideas, sortBy]);
 
   useEffect(() => {
     fetchIdeas();
@@ -188,8 +202,36 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
         </VStack>
 
         <VStack align="stretch" gap={8}>
+          <HStack justify="space-between" align="center">
+            <Text fontWeight="bold" fontSize="lg">Ideas</Text>
+            <SegmentedControl
+              value={sortBy}
+              onValueChange={(e) => setSortBy(e.value as 'newest' | 'votes')}
+              items={[
+                { 
+                  value: 'newest', 
+                  label: (
+                    <HStack gap={2}>
+                      <Clock size={14} />
+                      <Text>Newest</Text>
+                    </HStack>
+                  ) 
+                },
+                { 
+                  value: 'votes', 
+                  label: (
+                    <HStack gap={2}>
+                      <TrendingUp size={14} />
+                      <Text>Most Upvoted</Text>
+                    </HStack>
+                  ) 
+                },
+              ]}
+            />
+          </HStack>
+
           <SimpleGrid columns={1} gap={8}>
-            {ideas.map((idea) => (
+            {sortedIdeas.map((idea) => (
               <IdeaCard 
                 key={idea.id} 
                 idea={idea} 
