@@ -11,21 +11,59 @@ export const Header = () => {
   const [clickCount, setClickCount] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleTitleClick = () => {
-    setClickCount((prev) => prev + 1);
-
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
+  const handleTitleClick = (e: React.MouseEvent<HTMLHeadingElement>) => {
+    let offset = -1;
+    let textNode: Node | null = null;
+    
+    if (typeof document !== 'undefined') {
+      // @ts-expect-error - caretRangeFromPoint
+      if (document.caretRangeFromPoint) {
+        // @ts-expect-error - caretRangeFromPoint
+        const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+        if (range) {
+          offset = range.startOffset;
+          textNode = range.startContainer;
+        }
+      } 
+      // @ts-expect-error - caretPositionFromPoint
+      else if (document.caretPositionFromPoint) {
+        // @ts-expect-error - caretPositionFromPoint
+        const position = document.caretPositionFromPoint(e.clientX, e.clientY);
+        if (position) {
+          offset = position.offset;
+          textNode = position.offsetNode;
+        }
+      }
     }
 
-    if (clickCount + 1 === 5) {
-      router.push('/admin');
-      setClickCount(0);
-    } else {
-      timerRef.current = setTimeout(() => {
-        setClickCount(0);
-      }, 2000);
+    if (textNode) {
+      const text = textNode.textContent || '';
+      const charAtOffset = text[offset];
+      const charBeforeOffset = text[offset - 1];
+      
+      const isO = (charAtOffset === 'o' || charBeforeOffset === 'o') && (offset >= 6 && offset <= 9);
+      
+      if (isO) {
+        const nextCount = clickCount + 1;
+        setClickCount(nextCount);
+
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+
+        if (nextCount === 5) {
+          router.push('/admin');
+          setClickCount(0);
+        } else {
+          timerRef.current = setTimeout(() => {
+            setClickCount(0);
+          }, 2000);
+        }
+        return;
+      }
     }
+    
+    setClickCount(0);
   };
 
   return (
@@ -37,7 +75,7 @@ export const Header = () => {
             letterSpacing="tight" 
             onClick={handleTitleClick}
             cursor="default"
-            userSelect="none"
+            pointerEvents="all"
           >
             This should be a thing
           </Heading>
