@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
-import { saveAdminData, AdminData } from '@/lib/admin';
+import { saveAdminData, AdminData, getAdminSessionCookieName } from '@/lib/admin';
 import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
@@ -45,7 +45,8 @@ export async function POST(req: Request) {
       await saveAdminData(adminData);
       
       const response = NextResponse.json({ verified: true });
-      response.cookies.set('admin_session', 'authenticated', { 
+      const cookieName = await getAdminSessionCookieName();
+      response.cookies.set(cookieName, 'authenticated', { 
         httpOnly: true, 
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',

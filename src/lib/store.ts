@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { getRedisClient } from './redis';
 
 export interface Comment {
@@ -15,7 +16,7 @@ export interface Idea {
   createdAt: number;
 }
 
-const IDEAS_KEY = 'ideas_data';
+const IDEAS_KEY_PREFIX = 'ideas_data';
 
 const initialData: Idea[] = [
   {
@@ -30,10 +31,17 @@ const initialData: Idea[] = [
   }
 ];
 
+async function getIdeasKey() {
+  const headerList = await headers();
+  const host = headerList.get('host') || 'default';
+  return `${IDEAS_KEY_PREFIX}:${host}`;
+}
+
 export async function getIdeas(): Promise<Idea[]> {
   try {
     const client = await getRedisClient();
-    const data = await client.get(IDEAS_KEY);
+    const key = await getIdeasKey();
+    const data = await client.get(key);
     
     if (!data) {
       await saveIdeas(initialData);
@@ -50,7 +58,8 @@ export async function getIdeas(): Promise<Idea[]> {
 export async function saveIdeas(ideas: Idea[]) {
   try {
     const client = await getRedisClient();
-    await client.set(IDEAS_KEY, JSON.stringify(ideas));
+    const key = await getIdeasKey();
+    await client.set(key, JSON.stringify(ideas));
   } catch (error) {
     console.error('Error saving data to Redis:', error);
   }

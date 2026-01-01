@@ -1,7 +1,7 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getRedisClient } from './redis';
 
-const ADMIN_DATA_KEY = 'admin_data';
+const ADMIN_DATA_KEY_PREFIX = 'admin_data';
 
 export interface AdminCredential {
   id: string;
@@ -15,10 +15,23 @@ export interface AdminData {
   username: string;
 }
 
+async function getAdminKey() {
+  const headerList = await headers();
+  const host = headerList.get('host') || 'default';
+  return `${ADMIN_DATA_KEY_PREFIX}:${host}`;
+}
+
+export async function getAdminSessionCookieName() {
+  const headerList = await headers();
+  const host = headerList.get('host') || 'default';
+  return `admin_session_${host}`;
+}
+
 export async function getAdminData(): Promise<AdminData | null> {
   try {
     const client = await getRedisClient();
-    const data = await client.get(ADMIN_DATA_KEY);
+    const key = await getAdminKey();
+    const data = await client.get(key);
     if (!data) {
       return null;
     }
@@ -32,7 +45,8 @@ export async function getAdminData(): Promise<AdminData | null> {
 export async function saveAdminData(data: AdminData) {
   try {
     const client = await getRedisClient();
-    await client.set(ADMIN_DATA_KEY, JSON.stringify(data));
+    const key = await getAdminKey();
+    await client.set(key, JSON.stringify(data));
   } catch (error) {
     console.error('Error saving admin data to Redis:', error);
   }
@@ -40,5 +54,6 @@ export async function saveAdminData(data: AdminData) {
 
 export async function isAuthenticated() {
   const cookieStore = await cookies();
-  return cookieStore.get('admin_session')?.value === 'authenticated';
+  const cookieName = await getAdminSessionCookieName();
+  return cookieStore.get(cookieName)?.value === 'authenticated';
 }
