@@ -156,9 +156,8 @@ export const CommentSection = ({
                           size="sm" 
                           value={editText} 
                           onChange={(e) => setEditText(e.target.value)}
-                          bg="bg.panel"
+                          bg="bg.subtle"
                           autoFocus
-                          borderRadius="lg"
                         />
                         <HStack gap={2}>
                           <Button size="xs" colorPalette="blue" onClick={() => handleUpdate(comment.id)} loading={isUpdating}>
@@ -212,14 +211,11 @@ export const CommentSection = ({
               <Textarea 
                 size="sm" 
                 bg="bg.subtle"
-                border="none"
-                _focus={{ bg: "bg.panel", ring: "1px", ringColor: "blue.500" }}
                 placeholder="Write a comment..." 
                 value={text} 
                 onChange={(e) => setText(e.target.value)}
                 required
                 rows={3}
-                borderRadius="xl"
                 autoFocus
               />
             </Field>

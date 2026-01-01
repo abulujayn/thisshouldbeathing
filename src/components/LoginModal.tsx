@@ -95,6 +95,7 @@ export const LoginModal = ({ isOpen, onOpenChange, onLoginSuccess }: LoginModalP
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSendCode()}
                     autoFocus
+                    bg="bg.subtle"
                   />
                 </Field>
                 <Button 

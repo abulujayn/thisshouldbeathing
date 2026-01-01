@@ -1,6 +1,6 @@
 import { Accordion, HStack } from "@chakra-ui/react"
 import * as React from "react"
-import { LuChevronDown } from "react-icons/lu"
+import { ChevronDown } from "lucide-react"
 
 interface AccordionItemTriggerProps extends Accordion.ItemTriggerProps {
   indicatorPlacement?: "start" | "end"
@@ -15,7 +15,7 @@ export const AccordionItemTrigger = React.forwardRef<
     <Accordion.ItemTrigger {...rest} ref={ref}>
       {indicatorPlacement === "start" && (
         <Accordion.ItemIndicator rotate={{ base: "-90deg", _open: "0deg" }}>
-          <LuChevronDown />
+          <ChevronDown />
         </Accordion.ItemIndicator>
       )}
       <HStack gap="4" flex="1" textAlign="start" width="full">
@@ -23,7 +23,7 @@ export const AccordionItemTrigger = React.forwardRef<
       </HStack>
       {indicatorPlacement === "end" && (
         <Accordion.ItemIndicator>
-          <LuChevronDown />
+          <ChevronDown />
         </Accordion.ItemIndicator>
       )}
     </Accordion.ItemTrigger>
