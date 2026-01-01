@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const options = await generateRegistrationOptions({
     rpName,
     rpID,
-    userUint8ArrayID: userID,
+    userID: userID,
     userName,
     userDisplayName: 'admin',
     attestationType: 'none',
