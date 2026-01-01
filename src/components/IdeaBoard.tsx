@@ -1,0 +1,122 @@
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Container, Heading, VStack, SimpleGrid, Box, Text, Spinner, Center } from '@chakra-ui/react';
+import { Idea, Comment } from '@/lib/store';
+import { IdeaCard } from './IdeaCard';
+import { IdeaForm } from './IdeaForm';
+import { toaster, Toaster } from '@/components/ui/toaster';
+
+export const IdeaBoard = () => {
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [votedIdeas, setVotedIdeas] = useState<Set<string>>(new Set());
+
+  const fetchIdeas = async () => {
+    try {
+      const res = await fetch('/api/ideas');
+      const data = await res.json();
+      setIdeas(data);
+    } catch (error) {
+      console.error('Failed to fetch ideas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchIdeas();
+    const storedVotes = localStorage.getItem('votedIdeas');
+    if (storedVotes) {
+      setVotedIdeas(new Set(JSON.parse(storedVotes)));
+    }
+  }, []);
+
+  const handleVote = async (id: string, action: 'vote' | 'unvote') => {
+    const res = await fetch(`/api/ideas/${id}/vote`, { 
+      method: 'POST',
+      body: JSON.stringify({ action }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.ok) {
+      const updatedIdea = await res.json();
+      setIdeas(ideas.map(i => i.id === id ? { ...i, votes: updatedIdea.votes } : i));
+      
+      const newVotedIdeas = new Set(votedIdeas);
+      if (action === 'vote') {
+        newVotedIdeas.add(id);
+      } else {
+        newVotedIdeas.delete(id);
+      }
+      setVotedIdeas(newVotedIdeas);
+      localStorage.setItem('votedIdeas', JSON.stringify(Array.from(newVotedIdeas)));
+    }
+  };
+
+  const handleCommentAdded = (ideaId: string, comment: Comment) => {
+    setIdeas(ideas.map(i => 
+      i.id === ideaId ? { ...i, comments: [...i.comments, comment] } : i
+    ));
+    toaster.create({
+      title: "Comment posted",
+      type: "success",
+    });
+  };
+
+  const handleSubmit = async (title: string, description: string) => {
+    const res = await fetch('/api/ideas', {
+      method: 'POST',
+      body: JSON.stringify({ title, description }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.ok) {
+      const newIdea = await res.json();
+      setIdeas([newIdea, ...ideas]);
+      toaster.create({
+        title: "Idea submitted!",
+        description: "Your idea has been shared with everyone.",
+        type: "success",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <Center minH="50vh">
+        <Spinner size="xl" />
+      </Center>
+    );
+  }
+
+  return (
+    <Container maxW="4xl" py={12}>
+      <Toaster />
+      <VStack gap={12} align="stretch">
+        <VStack gap={4} align="center">
+          <Heading size="3xl" textAlign="center">This should be a thing</Heading>
+          <Text fontSize="lg" color="fg.muted">Collaborate and upvote the best ideas for things that should exist.</Text>
+          <IdeaForm onSubmit={handleSubmit} />
+        </VStack>
+
+        <SimpleGrid columns={{ base: 1, md: 1 }} gap={6}>
+          {ideas.map((idea) => (
+            <IdeaCard 
+              key={idea.id} 
+              idea={idea} 
+              hasVoted={votedIdeas.has(idea.id)}
+              onVote={handleVote} 
+              onCommentAdded={handleCommentAdded}
+            />
+          ))}
+        </SimpleGrid>
+
+        {ideas.length === 0 && (
+          <Center py={20}>
+            <Text color="fg.muted">No ideas yet. Be the first to share one!</Text>
+          </Center>
+        )}
+      </VStack>
+    </Container>
+  );
+};
