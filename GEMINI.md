@@ -36,7 +36,7 @@
 
 ### 3. Workflow & Verification
 *   **Build Check:** After significant changes, run `npm run build` to verify type safety and build success.
-*   **Linting:** Run `npm run lint` to catch issues early.
+*   **Run unit tests:** Always ensure unit tests are passing before committing anything to git.
 
 ### 4. Git & Naming
 *   **Commits:** Start messages with a lowercase verb (e.g., "fix bug in store", "add new component").
