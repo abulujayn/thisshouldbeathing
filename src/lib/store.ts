@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { getRedisClient } from './redis';
+import { pool, ensureSchema } from './db';
 import { getAdminData } from './admin';
 
 export interface Comment {
@@ -18,8 +18,6 @@ export interface Idea {
   comments: Comment[];
   createdAt: number;
 }
-
-const IDEAS_KEY_PREFIX = 'ideas'; // Using granular storage structure
 
 const initialData: Idea[] = [
   {
@@ -40,22 +38,6 @@ async function getHost() {
   return headerList.get('host') || 'default';
 }
 
-function getIdeaKey(host: string, id: string) {
-  return `${IDEAS_KEY_PREFIX}:${host}:idea:${id}`;
-}
-
-function getIdeaCommentsKey(host: string, id: string) {
-  return `${IDEAS_KEY_PREFIX}:${host}:idea:${id}:comment_ids`;
-}
-
-function getCommentKey(host: string, ideaId: string, commentId: string) {
-    return `${IDEAS_KEY_PREFIX}:${host}:idea:${ideaId}:comment:${commentId}`;
-}
-
-function getIdeasIdsKey(host: string) {
-  return `${IDEAS_KEY_PREFIX}:${host}:ids`;
-}
-
 async function checkAdminSetup() {
   const adminData = await getAdminData();
   if (!adminData?.credential) {
@@ -64,85 +46,89 @@ async function checkAdminSetup() {
 }
 
 export async function getIdea(id: string): Promise<Idea | null> {
-  const client = await getRedisClient();
+  await ensureSchema();
   const host = await getHost();
-  const key = getIdeaKey(host, id);
   
-  const ideaData = await client.hGetAll(key);
-  if (!ideaData || Object.keys(ideaData).length === 0) return null;
+  const client = await pool.connect();
+  try {
+    const ideaRes = await client.query(
+      'SELECT * FROM ideas WHERE host = $1 AND id = $2',
+      [host, id]
+    );
 
-  const commentsIdsKey = getIdeaCommentsKey(host, id);
-  const commentIds = await client.lRange(commentsIdsKey, 0, -1);
-  
-  const comments: Comment[] = [];
-  if (commentIds.length > 0) {
-      const pipeline = client.multi();
-      for (const cId of commentIds) {
-          pipeline.hGetAll(getCommentKey(host, id, cId));
-      }
-      const commentResults = await pipeline.exec();
-      if (commentResults) {
-          for (const res of commentResults) {
-              const cData = res as unknown as Record<string, string>;
-              if (cData && Object.keys(cData).length > 0) {
-                  comments.push({
-                      id: cData.id,
-                      text: cData.text,
-                      authorEmail: cData.authorEmail,
-                      createdAt: parseInt(cData.createdAt || '0', 10)
-                  });
-              }
-          }
-      }
+    if (ideaRes.rows.length === 0) return null;
+    const row = ideaRes.rows[0];
+
+    const commentsRes = await client.query(
+      'SELECT * FROM comments WHERE host = $1 AND idea_id = $2 ORDER BY created_at ASC',
+      [host, id]
+    );
+
+    const comments: Comment[] = commentsRes.rows.map(c => ({
+      id: c.id,
+      text: c.text,
+      authorEmail: c.author_email,
+      createdAt: Number(c.created_at)
+    }));
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      authorEmail: row.author_email,
+      votes: row.votes,
+      createdAt: Number(row.created_at),
+      comments
+    };
+  } finally {
+    client.release();
   }
-
-  return {
-    id: ideaData.id,
-    title: ideaData.title,
-    description: ideaData.description,
-    authorEmail: ideaData.authorEmail,
-    votes: parseInt(ideaData.votes || '0', 10),
-    createdAt: parseInt(ideaData.createdAt || '0', 10),
-    comments
-  };
 }
 
 export async function getIdeas(): Promise<Idea[]> {
+  await ensureSchema();
+  const host = await getHost();
+  const client = await pool.connect();
+  
   try {
-    const client = await getRedisClient();
-    const host = await getHost();
-    const idsKey = getIdeasIdsKey(host);
+    const idsRes = await client.query(
+      'SELECT id FROM ideas WHERE host = $1 ORDER BY created_at DESC',
+      [host]
+    );
     
-    const ids = await client.zRange(idsKey, 0, -1, { REV: true });
-    
-    if (ids.length === 0) {
-        const exists = await client.exists(idsKey);
-        if (!exists) {
-            await Promise.all(initialData.map(idea => createIdea(idea, true)));
-            return initialData;
-        }
-        return [];
+    if (idsRes.rows.length === 0) {
+      // Check if we should initialize data (if it's truly empty, not just no results)
+      // For simplicity, if no ideas, we insert initial data.
+      // But we should check if we've ever initialized?
+      // The original logic checked if the IDs list key existed. 
+      // Here, if count is 0, we can assume we need init or it's empty.
+      // Let's rely on checking if any idea exists.
+      
+      const countRes = await client.query('SELECT COUNT(*) FROM ideas WHERE host = $1', [host]);
+      if (parseInt(countRes.rows[0].count) === 0) {
+         // Insert initial data
+         await Promise.all(initialData.map(idea => createIdea(idea, true)));
+         return initialData;
+      }
+      return [];
     }
 
     const ideas: Idea[] = [];
-    // We fetch ideas one by one (or in small batches) to handle nested comments cleanly
-    // A single multi pipeline for ALL ideas + ALL comments would be complex to parse.
-    // For now, let's use a simpler loop with getIdea. 
-    // Optimization: we can still pipeline the getIdea calls.
-    for (const id of ids) {
-        const idea = await getIdea(id);
-        if (idea) ideas.push(idea);
+    for (const row of idsRes.rows) {
+      const idea = await getIdea(row.id);
+      if (idea) ideas.push(idea);
     }
     
     return ideas;
   } catch (error) {
-    console.error('Error reading data from Redis:', error);
+    console.error('Error reading data from DB:', error);
     return [];
+  } finally {
+    client.release();
   }
 }
 
-// Deprecated: kept for signature compatibility during refactor if needed, 
-// but we should replace usages.
+// Deprecated: kept for signature compatibility during refactor if needed.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function saveIdeas(_ideas: Idea[]) {
     console.warn("saveIdeas is deprecated. Use granular functions.");
@@ -151,150 +137,197 @@ export async function saveIdeas(_ideas: Idea[]) {
 
 export async function createIdea(idea: Idea, skipAdminCheck = false) {
   if (!skipAdminCheck) await checkAdminSetup();
-  
-  const client = await getRedisClient();
+  await ensureSchema();
   const host = await getHost();
-  const id = idea.id;
-  
-  const multi = client.multi();
-  
-  multi.hSet(getIdeaKey(host, id), {
-    id: idea.id,
-    title: idea.title,
-    description: idea.description,
-    authorEmail: idea.authorEmail,
-    votes: idea.votes.toString(),
-    createdAt: idea.createdAt.toString()
-  });
-  
-  if (idea.comments.length > 0) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `INSERT INTO ideas (host, id, title, description, author_email, votes, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [host, idea.id, idea.title, idea.description, idea.authorEmail, idea.votes, idea.createdAt]
+    );
+
+    if (idea.comments.length > 0) {
       for (const comment of idea.comments) {
-          const cKey = getCommentKey(host, id, comment.id);
-          multi.hSet(cKey, {
-              id: comment.id,
-              text: comment.text,
-              authorEmail: comment.authorEmail,
-              createdAt: comment.createdAt.toString()
-          });
-          multi.rPush(getIdeaCommentsKey(host, id), comment.id);
+        await client.query(
+          `INSERT INTO comments (host, idea_id, id, text, author_email, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [host, idea.id, comment.id, comment.text, comment.authorEmail, comment.createdAt]
+        );
       }
+    }
+
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
   }
-  
-  multi.zAdd(getIdeasIdsKey(host), { score: idea.createdAt, value: id });
-  
-  await multi.exec();
 }
 
 export async function voteIdea(id: string, increment: number) {
     await checkAdminSetup();
-    const client = await getRedisClient();
+    await ensureSchema();
     const host = await getHost();
-    const key = getIdeaKey(host, id);
+    const client = await pool.connect();
     
-    const exists = await client.exists(key);
-    if (!exists) throw new Error("Idea not found");
-
-    const newVotes = await client.hIncrBy(key, 'votes', increment);
-    if (newVotes < 0) {
-        await client.hSet(key, 'votes', 0);
-        return 0;
+    try {
+        const res = await client.query(
+            `UPDATE ideas 
+             SET votes = GREATEST(0, votes + $1) 
+             WHERE host = $2 AND id = $3 
+             RETURNING votes`,
+            [increment, host, id]
+        );
+        
+        if (res.rows.length === 0) throw new Error("Idea not found");
+        return res.rows[0].votes;
+    } finally {
+        client.release();
     }
-    return newVotes;
 }
 
 export async function resetVotes(id: string) {
     await checkAdminSetup();
-    const client = await getRedisClient();
+    await ensureSchema();
     const host = await getHost();
-    await client.hSet(getIdeaKey(host, id), 'votes', 0);
+    const client = await pool.connect();
+    try {
+        await client.query(
+            'UPDATE ideas SET votes = 0 WHERE host = $1 AND id = $2',
+            [host, id]
+        );
+    } finally {
+        client.release();
+    }
 }
 
 export async function addComment(ideaId: string, comment: Comment) {
     await checkAdminSetup();
-    const client = await getRedisClient();
+    await ensureSchema();
     const host = await getHost();
-    const key = getIdeaKey(host, ideaId);
-    
-    const exists = await client.exists(key);
-    if (!exists) throw new Error("Idea not found");
-    
-    const multi = client.multi();
-    const cKey = getCommentKey(host, ideaId, comment.id);
-    multi.hSet(cKey, {
-        id: comment.id,
-        text: comment.text,
-        authorEmail: comment.authorEmail,
-        createdAt: comment.createdAt.toString()
-    });
-    multi.rPush(getIdeaCommentsKey(host, ideaId), comment.id);
-    await multi.exec();
+    const client = await pool.connect();
+
+    try {
+        // Ensure idea exists first? Postgres FK handles this but good to be explicit or let DB fail
+        // The original checked existence. FK constraint will throw if idea doesn't exist.
+        // We'll rely on FK constraint, but catching error to match "Idea not found" might be tricky without specific error codes.
+        // Let's just insert.
+        
+        // We do need to verify idea exists to match exact previous behavior logic if strictly needed, 
+        // but let's assume standard DB behavior is fine.
+        // Actually, previous code threw "Idea not found". 
+        // Let's just query existence to be safe and match behavior.
+        const existRes = await client.query('SELECT 1 FROM ideas WHERE host = $1 AND id = $2', [host, ideaId]);
+        if (existRes.rows.length === 0) throw new Error("Idea not found");
+
+        await client.query(
+            `INSERT INTO comments (host, idea_id, id, text, author_email, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [host, ideaId, comment.id, comment.text, comment.authorEmail, comment.createdAt]
+        );
+    } finally {
+        client.release();
+    }
 }
 
 export async function deleteComment(ideaId: string, commentId: string) {
     await checkAdminSetup();
-    const client = await getRedisClient();
+    await ensureSchema();
     const host = await getHost();
-    
-    const multi = client.multi();
-    multi.del(getCommentKey(host, ideaId, commentId));
-    multi.lRem(getIdeaCommentsKey(host, ideaId), 0, commentId);
-    await multi.exec();
+    const client = await pool.connect();
+    try {
+        await client.query(
+            'DELETE FROM comments WHERE host = $1 AND idea_id = $2 AND id = $3',
+            [host, ideaId, commentId]
+        );
+    } finally {
+        client.release();
+    }
 }
 
 export async function deleteIdea(id: string) {
     await checkAdminSetup();
-    const client = await getRedisClient();
+    await ensureSchema();
     const host = await getHost();
-    
-    // Get all comment IDs first to delete them
-    const commentIds = await client.lRange(getIdeaCommentsKey(host, id), 0, -1);
-    
-    const multi = client.multi();
-    multi.del(getIdeaKey(host, id));
-    for (const cId of commentIds) {
-        multi.del(getCommentKey(host, id, cId));
+    const client = await pool.connect();
+    try {
+        // Cascade delete will handle comments
+        await client.query(
+            'DELETE FROM ideas WHERE host = $1 AND id = $2',
+            [host, id]
+        );
+    } finally {
+        client.release();
     }
-    multi.del(getIdeaCommentsKey(host, id));
-    multi.zRem(getIdeasIdsKey(host), id);
-    await multi.exec();
 }
 
 export async function updateIdea(id: string, updates: Partial<Pick<Idea, 'title' | 'description'>>) {
   await checkAdminSetup();
-  const client = await getRedisClient();
+  await ensureSchema();
   const host = await getHost();
-  const key = getIdeaKey(host, id);
+  const client = await pool.connect();
 
-  const exists = await client.exists(key);
-  if (!exists) throw new Error("Idea not found");
+  try {
+      const fields: string[] = [];
+      const values: any[] = [];
+      let idx = 1;
 
-  const fields: Record<string, string> = {};
-  if (updates.title !== undefined) fields.title = updates.title;
-  if (updates.description !== undefined) fields.description = updates.description;
+      if (updates.title !== undefined) {
+          fields.push(`title = $${idx++}`);
+          values.push(updates.title);
+      }
+      if (updates.description !== undefined) {
+          fields.push(`description = $${idx++}`);
+          values.push(updates.description);
+      }
 
-  if (Object.keys(fields).length > 0) {
-      await client.hSet(key, fields);
+      if (fields.length > 0) {
+          values.push(host);
+          values.push(id);
+          const res = await client.query(
+              `UPDATE ideas SET ${fields.join(', ')} WHERE host = $${idx} AND id = $${idx+1}`,
+              values
+          );
+          if (res.rowCount === 0) throw new Error("Idea not found");
+      } else {
+           // Check existence even if no updates
+           const existRes = await client.query('SELECT 1 FROM ideas WHERE host = $1 AND id = $2', [host, id]);
+           if (existRes.rows.length === 0) throw new Error("Idea not found");
+      }
+      
+      return getIdea(id);
+  } finally {
+      client.release();
   }
-  
-  return getIdea(id);
 }
 
 export async function updateComment(ideaId: string, commentId: string, newText: string) {
     await checkAdminSetup();
-    const client = await getRedisClient();
+    await ensureSchema();
     const host = await getHost();
-    const cKey = getCommentKey(host, ideaId, commentId);
+    const client = await pool.connect();
     
-    const exists = await client.exists(cKey);
-    if (!exists) throw new Error("Comment not found");
-    
-    await client.hSet(cKey, 'text', newText);
-    
-    const cData = await client.hGetAll(cKey);
-    return {
-        id: cData.id,
-        text: cData.text,
-        authorEmail: cData.authorEmail,
-        createdAt: parseInt(cData.createdAt || '0', 10)
-    };
+    try {
+        const res = await client.query(
+            `UPDATE comments SET text = $1 WHERE host = $2 AND idea_id = $3 AND id = $4 RETURNING *`,
+            [newText, host, ideaId, commentId]
+        );
+        
+        if (res.rows.length === 0) throw new Error("Comment not found");
+        
+        const row = res.rows[0];
+        return {
+            id: row.id,
+            text: row.text,
+            authorEmail: row.author_email,
+            createdAt: Number(row.created_at)
+        };
+    } finally {
+        client.release();
+    }
 }

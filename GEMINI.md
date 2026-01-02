@@ -1,78 +1,43 @@
-# This should be a thing - Project Context
+# This should be a thing
 
 ## Project Overview
+"This should be a thing" is a modern, multi-tenant Idea Board application. It allows users to propose ideas, vote, and discuss. It features a secure, passwordless admin interface using WebAuthn (Passkeys) and supports multiple isolated instances based on the request `Host` header.
 
-"This should be a thing" is a modern Idea Board application built with **Next.js 16**. It allows users to propose ideas, vote on them, and discuss them via comments. The application features a secure, passwordless admin interface using **WebAuthn (Passkeys)**.
-
-## Key Features
-
-*   **Idea Management:** Users can submit new ideas with titles and descriptions.
-*   **Voting System:** Community voting mechanism to highlight popular ideas.
-*   **Comments:** Threaded discussion support for each idea.
-*   **Email Authentication:** Secure login via email verification codes using Resend.
-*   **Admin System:**
-    *   **Passwordless Auth:** Uses WebAuthn (Passkeys) for secure, modern authentication.
-    *   **First-run Setup:** Automatic prompt to register the first admin passkey if none exists.
-    *   **Management:** Admins can reset votes and likely manage content (inferred).
-*   **Multi-tenancy Support:** Data in Redis is namespaced by the request's `Host` header, allowing multiple instances or domains to share a Redis instance while keeping data separate.
-
-## Technology Stack
-
+## Tech Stack
 *   **Framework:** Next.js 16 (App Router)
 *   **Language:** TypeScript
-*   **UI Library:** Chakra UI v3 (with Emotion)
-*   **Icons:** Lucide React, React Icons
-*   **Database:** Redis (via `redis` client)
-*   **Authentication:**
-    *   **Admin:** `@simplewebauthn/browser` & `@simplewebauthn/server`
-    *   **User:** `resend` (Email) & `jsonwebtoken` (Sessions)
-*   **State Management:** Server-side state via Redis, Client-side React hooks.
+*   **Database:** Neon Database (Serverless PostgreSQL) via `@neondatabase/serverless`
+*   **UI:** Chakra UI v3, Lucide React
+*   **Auth:**
+    *   **Admin:** WebAuthn (Passkeys) via `@simplewebauthn`
+    *   **User:** Email OTP via `resend` & JWT sessions
 
-## Architecture & Directory Structure
+## Architecture & Data
+*   **API Routes:** `src/app/api/` handles backend logic.
+*   **Data Access:** `src/lib/` contains the data layer.
+    *   `db.ts`: Database connection pool and schema initialization (`ensureSchema`).
+    *   `store.ts`: CRUD operations for Ideas and Comments.
+    *   `admin.ts`: Admin auth and data persistence.
+    *   `auth.ts`: User authentication logic.
+*   **Multi-tenancy:** All database tables (`ideas`, `comments`, `admin_data`, `auth_codes`) are partitioned by a `host` column.
 
-*   `src/app/`: Next.js App Router pages and API routes.
-    *   `api/`: Backend logic for Ideas, Comments, and Admin Auth.
-    *   `admin/`: Admin-specific pages (if any specific ones exist distinct from modal flow).
-*   `src/components/`: React UI components.
-    *   `IdeaBoard.tsx`: Main container for the idea list.
-    *   `IdeaCard.tsx`: Individual idea display.
-    *   `IdeaForm.tsx`: Submission form.
-    *   `ui/`: Reusable UI components (likely from a component library generator).
-*   `src/lib/`: Core logic and utilities.
-    *   `redis.ts`: Redis client configuration and connection handling.
-    *   `store.ts`: Data access layer for Ideas using granular Redis Hashes and Sets.
-    *   `admin.ts`: Admin authentication and session management logic.
-    *   `validation.ts`: Zod schemas for input validation.
+## Guidelines
 
-## Key Commands
+### 1. Database & Data Integrity
+*   **Pattern:** Always use the dedicated helper functions in `src/lib/` (e.g., `store.ts`) instead of writing raw SQL in API routes.
+*   **Security:** ALWAYS use parameterized queries (e.g., `VALUES ($1, $2)`) to prevent SQL injection.
+*   **Multi-tenancy:** Every query MUST filter by `host` (e.g., `WHERE host = $1 ...`).
+*   **Initialization:** Ensure `await ensureSchema()` is called before the first database operation in any flow.
 
-*   **Start Development Server:**
-    ```bash
-    npm run dev
-    ```
-*   **Build for Production:**
-    ```bash
-    npm run build
-    ```
-*   **Start Production Server:**
-    ```bash
-    npm run start
-    ```
-*   **Lint Code:**
-    ```bash
-    npm run lint
-    ```
+### 2. Coding Standards
+*   **Styling:** Use Chakra UI components. Maintain a clean, minimal design consistent with existing components.
+*   **Type Safety:** Use strict TypeScript. Define interfaces for all data structures (e.g., `Idea`, `Comment`).
+*   **Imports:** Use the `@/` alias for `src/` imports.
 
-## Conventions
+### 3. Workflow & Verification
+*   **Build Check:** After significant changes, run `npm run build` to verify type safety and build success.
+*   **Linting:** Run `npm run lint` to catch issues early.
 
-*   **Styling:** Uses Chakra UI components and styling system.
-*   **Design:** Keep design clean and simple, whilst mainting a good look and feel. Keep consistency in design principles across the project.
-*   **Data Fetching:** Server Components fetch data directly where possible; Client Components use API routes (`/api/...`) for mutations and updates.
-*   **Type Safety:** Strict TypeScript usage for all interfaces (`Idea`, `Comment`, `AdminData`).
-*   **Paths:** Use `@/` alias for imports from `src/` (e.g., `import ... from '@/components/...'`).
-
-## General advices
-
-*   Once finished making changes, run `npm run lint` and fix any errors or warnings that come up. Then run `npm run build` to confirm the project builds successfully.
-*   when making git commits, the first word should be a verb such as "add" or "fix" or "change" or "update" and keep the commit message lowercase.
-*   Any references to the project's name, "This should be a thing" should only capitalise "this" and not the rest of the words.
+### 4. Git & Naming
+*   **Commits:** Start messages with a lowercase verb (e.g., "fix bug in store", "add new component").
+*   **Branding:** The project name is "This should be a thing" (only "This" is capitalized).
