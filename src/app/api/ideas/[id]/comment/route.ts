@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { addComment, getIdea, Comment } from '@/lib/store';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { createCommentSchema } from '@/lib/validation';
 
 export async function POST(
   request: Request,
@@ -19,6 +20,11 @@ export async function POST(
 
   const { id } = await params;
   const body = await request.json();
+
+  const validation = createCommentSchema.safeParse(body);
+  if (!validation.success) {
+      return NextResponse.json({ error: validation.error.flatten().fieldErrors }, { status: 400 });
+  }
   
   // Check existence
   const idea = await getIdea(id);
@@ -27,8 +33,8 @@ export async function POST(
   }
 
   const newComment: Comment = {
-    id: Math.random().toString(36).substring(7),
-    text: body.text,
+    id: crypto.randomUUID(),
+    text: validation.data.text,
     authorEmail: userEmail,
     createdAt: Date.now(),
   };

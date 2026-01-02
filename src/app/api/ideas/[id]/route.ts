@@ -3,6 +3,7 @@ import { getIdea, updateIdea, deleteIdea } from '@/lib/store';
 import { isAuthenticated } from '@/lib/admin';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { updateIdeaSchema } from '@/lib/validation';
 
 async function getUserEmail() {
   const cookieStore = await cookies();
@@ -20,7 +21,13 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { title, description } = body;
+
+  const validation = updateIdeaSchema.safeParse(body);
+  if (!validation.success) {
+      return NextResponse.json({ error: validation.error.flatten().fieldErrors }, { status: 400 });
+  }
+
+  const { title, description } = validation.data;
 
   const idea = await getIdea(id);
 

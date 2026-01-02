@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getIdeas, createIdea, Idea } from '@/lib/store';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { createIdeaSchema } from '@/lib/validation';
 
 export async function GET() {
   const ideas = await getIdeas();
@@ -20,10 +21,17 @@ export async function POST(request: Request) {
   const userEmail = (userPayload as { email: string }).email;
   const body = await request.json();
 
+  const validation = createIdeaSchema.safeParse(body);
+  if (!validation.success) {
+      return NextResponse.json({ error: validation.error.flatten().fieldErrors }, { status: 400 });
+  }
+
+  const { title, description } = validation.data;
+
   const newIdea: Idea = {
-    id: Math.random().toString(36).substring(7),
-    title: body.title,
-    description: body.description,
+    id: crypto.randomUUID(),
+    title,
+    description,
     authorEmail: userEmail,
     votes: 0,
     comments: [],

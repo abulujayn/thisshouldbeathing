@@ -3,6 +3,7 @@ import { getIdea, deleteComment, updateComment } from '@/lib/store';
 import { isAuthenticated } from '@/lib/admin';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { updateCommentSchema } from '@/lib/validation';
 
 async function getUserEmail() {
   const cookieStore = await cookies();
@@ -20,7 +21,13 @@ export async function PATCH(
 ) {
   const { id, commentId } = await params;
   const body = await request.json();
-  const { text } = body;
+
+  const validation = updateCommentSchema.safeParse(body);
+  if (!validation.success) {
+      return NextResponse.json({ error: validation.error.flatten().fieldErrors }, { status: 400 });
+  }
+
+  const { text } = validation.data;
 
   const idea = await getIdea(id);
   if (!idea) {
@@ -39,17 +46,13 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (text !== undefined) {
-      try {
-        const updated = await updateComment(id, commentId, text);
-        return NextResponse.json(updated);
-      } catch (e) {
-          console.error(e);
-          return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
-      }
+  try {
+    const updated = await updateComment(id, commentId, text);
+    return NextResponse.json(updated);
+  } catch (e) {
+      console.error(e);
+      return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
-
-  return NextResponse.json(comment);
 }
 
 export async function DELETE(

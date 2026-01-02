@@ -22,7 +22,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "redis": "^5.10.0",
-    "resend": "^6.6.0"
+    "resend": "^6.6.0",
+    "zod": "^4.3.4"
   },
   "devDependencies": {
     "@types/node": "^20",

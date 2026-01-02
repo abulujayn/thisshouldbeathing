@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { voteIdea, getIdea } from '@/lib/store';
+import { voteSchema } from '@/lib/validation';
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { action } = await request.json();
+  const body = await request.json();
+
+  const validation = voteSchema.safeParse(body);
+  if (!validation.success) {
+      return NextResponse.json({ error: validation.error.flatten().fieldErrors }, { status: 400 });
+  }
+
+  const { action } = validation.data;
   
   try {
     let increment = 0;
