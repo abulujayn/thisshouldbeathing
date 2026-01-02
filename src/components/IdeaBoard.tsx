@@ -122,20 +122,32 @@ export const IdeaBoard = ({ isAdmin }: IdeaBoardProps) => {
     }
   };
 
-  const handleSubmit = async (title: string, description: string, authorEmail: string) => {
-    const res = await fetch('/api/ideas', {
-      method: 'POST',
-      body: JSON.stringify({ title, description, authorEmail }),
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (res.ok) {
-      const newIdea = await res.json();
-      setIdeas([newIdea, ...ideas]);
-      toaster.create({
-        title: "Idea submitted!",
-        description: "Your idea has been shared with everyone.",
-        type: "success",
+  const handleSubmit = async (title: string, description: string, authorEmail: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/ideas', {
+        method: 'POST',
+        body: JSON.stringify({ title, description, authorEmail }),
+        headers: { 'Content-Type': 'application/json' },
       });
+      if (res.ok) {
+        const newIdea = await res.json();
+        setIdeas([newIdea, ...ideas]);
+        toaster.create({
+          title: "Idea submitted!",
+          description: "Your idea has been shared with everyone.",
+          type: "success",
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to submit idea:', error);
+      toaster.create({
+        title: "Submission failed",
+        description: "Please try again later.",
+        type: "error",
+      });
+      return false;
     }
   };
 

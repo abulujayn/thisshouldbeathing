@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoginModal } from './LoginModal';
 
 interface IdeaFormProps {
-  onSubmit: (title: string, description: string, authorEmail: string) => Promise<void>;
+  onSubmit: (title: string, description: string, authorEmail: string) => Promise<boolean>;
 }
 
 export const IdeaForm = ({ onSubmit }: IdeaFormProps) => {
@@ -31,11 +31,14 @@ export const IdeaForm = ({ onSubmit }: IdeaFormProps) => {
   const handleSubmit = async () => {
     if (!title || !user?.email) return;
     setIsSubmitting(true);
-    await onSubmit(title, description, user.email);
-    setTitle('');
-    setDescription('');
+    const success = await onSubmit(title, description, user.email);
     setIsSubmitting(false);
-    setIsOpen(false);
+    
+    if (success) {
+      setTitle('');
+      setDescription('');
+      setIsOpen(false);
+    }
   };
 
   const handleOpen = () => {
