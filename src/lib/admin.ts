@@ -2,8 +2,6 @@ import { cookies, headers } from 'next/headers';
 import { pool, ensureSchema } from './db';
 import type { AuthenticatorTransport } from '@simplewebauthn/server';
 
-const ADMIN_DATA_KEY_PREFIX = 'admin_data';
-
 export interface AdminCredential {
   id: string;
   publicKey: string;
@@ -18,12 +16,6 @@ export interface AdminData {
 
 // Deprecated logic, but kept for compatibility if referenced elsewhere 
 // (though only used internally in getAdminData in Redis version)
-async function getAdminKey() {
-  const headerList = await headers();
-  const host = headerList.get('host') || 'default';
-  return `${ADMIN_DATA_KEY_PREFIX}:${host}`;
-}
-
 async function getHost() {
   const headerList = await headers();
   return headerList.get('host') || 'default';

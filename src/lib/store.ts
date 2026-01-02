@@ -91,32 +91,49 @@ export async function getIdeas(): Promise<Idea[]> {
   const client = await pool.connect();
   
   try {
-    const idsRes = await client.query(
-      'SELECT id FROM ideas WHERE host = $1 ORDER BY created_at DESC',
+    const ideasRes = await client.query(
+      'SELECT * FROM ideas WHERE host = $1 ORDER BY created_at DESC',
       [host]
     );
     
-    if (idsRes.rows.length === 0) {
-      // Check if we should initialize data (if it's truly empty, not just no results)
-      // For simplicity, if no ideas, we insert initial data.
-      // But we should check if we've ever initialized?
-      // The original logic checked if the IDs list key existed. 
-      // Here, if count is 0, we can assume we need init or it's empty.
-      // Let's rely on checking if any idea exists.
-      
-      const countRes = await client.query('SELECT COUNT(*) FROM ideas WHERE host = $1', [host]);
-      if (parseInt(countRes.rows[0].count) === 0) {
-         // Insert initial data
-         await Promise.all(initialData.map(idea => createIdea(idea, true)));
-         return initialData;
-      }
-      return [];
+    if (ideasRes.rows.length === 0) {
+      // If no ideas found, initialize with default data
+      await Promise.all(initialData.map(idea => createIdea(idea, true)));
+      return initialData;
     }
 
-    const ideas: Idea[] = [];
-    for (const row of idsRes.rows) {
-      const idea = await getIdea(row.id);
-      if (idea) ideas.push(idea);
+    const ideas: Idea[] = ideasRes.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      authorEmail: row.author_email,
+      votes: row.votes,
+      createdAt: Number(row.created_at),
+      comments: []
+    }));
+
+    const ideaIds = ideas.map(i => i.id);
+
+    const commentsRes = await client.query(
+      'SELECT * FROM comments WHERE host = $1 AND idea_id = ANY($2) ORDER BY created_at ASC',
+      [host, ideaIds]
+    );
+
+    const commentsByIdeaId = new Map<string, Comment[]>();
+    for (const c of commentsRes.rows) {
+      if (!commentsByIdeaId.has(c.idea_id)) {
+        commentsByIdeaId.set(c.idea_id, []);
+      }
+      commentsByIdeaId.get(c.idea_id)?.push({
+        id: c.id,
+        text: c.text,
+        authorEmail: c.author_email,
+        createdAt: Number(c.created_at)
+      });
+    }
+
+    for (const idea of ideas) {
+      idea.comments = commentsByIdeaId.get(idea.id) || [];
     }
     
     return ideas;
@@ -274,7 +291,7 @@ export async function updateIdea(id: string, updates: Partial<Pick<Idea, 'title'
 
   try {
       const fields: string[] = [];
-      const values: any[] = [];
+      const values: string[] = [];
       let idx = 1;
 
       if (updates.title !== undefined) {
