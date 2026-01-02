@@ -143,7 +143,8 @@ export async function getIdeas(): Promise<Idea[]> {
 
 // Deprecated: kept for signature compatibility during refactor if needed, 
 // but we should replace usages.
-export async function saveIdeas(ideas: Idea[]) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function saveIdeas(_ideas: Idea[]) {
     console.warn("saveIdeas is deprecated. Use granular functions.");
     throw new Error("saveIdeas is deprecated. Refactor to use createIdea/updateIdea.");
 }

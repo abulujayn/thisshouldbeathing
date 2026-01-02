@@ -40,8 +40,9 @@
     *   `ui/`: Reusable UI components (likely from a component library generator).
 *   `src/lib/`: Core logic and utilities.
     *   `redis.ts`: Redis client configuration and connection handling.
-    *   `store.ts`: Data access layer for Ideas (fetch/save logic).
+    *   `store.ts`: Data access layer for Ideas using granular Redis Hashes and Sets.
     *   `admin.ts`: Admin authentication and session management logic.
+    *   `validation.ts`: Zod schemas for input validation.
 
 ## Key Commands
 
