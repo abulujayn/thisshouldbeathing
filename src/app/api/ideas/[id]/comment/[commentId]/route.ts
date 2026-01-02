@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getIdeas, saveIdeas } from '@/lib/store';
+import { getIdea, deleteComment, updateComment } from '@/lib/store';
 import { isAuthenticated } from '@/lib/admin';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
@@ -22,8 +22,7 @@ export async function PATCH(
   const body = await request.json();
   const { text } = body;
 
-  const ideas = await getIdeas();
-  const idea = ideas.find((i) => i.id === id);
+  const idea = await getIdea(id);
   if (!idea) {
     return NextResponse.json({ error: 'Idea not found' }, { status: 404 });
   }
@@ -40,9 +39,16 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (text !== undefined) comment.text = text;
+  if (text !== undefined) {
+      try {
+        const updated = await updateComment(id, commentId, text);
+        return NextResponse.json(updated);
+      } catch (e) {
+          console.error(e);
+          return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+      }
+  }
 
-  await saveIdeas(ideas);
   return NextResponse.json(comment);
 }
 
@@ -52,8 +58,7 @@ export async function DELETE(
 ) {
   const { id, commentId } = await params;
 
-  const ideas = await getIdeas();
-  const idea = ideas.find((i) => i.id === id);
+  const idea = await getIdea(id);
   if (!idea) {
     return NextResponse.json({ error: 'Idea not found' }, { status: 404 });
   }
@@ -70,7 +75,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  idea.comments = idea.comments.filter((c) => c.id !== commentId);
-  await saveIdeas(ideas);
-  return NextResponse.json({ success: true });
+  try {
+      await deleteComment(id, commentId);
+      return NextResponse.json({ success: true });
+  } catch (e) {
+      console.error(e);
+      return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  }
 }

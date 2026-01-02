@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getIdeas, saveIdeas } from '@/lib/store';
+import { voteIdea, getIdea } from '@/lib/store';
 
 export async function POST(
   request: Request,
@@ -7,17 +7,26 @@ export async function POST(
 ) {
   const { id } = await params;
   const { action } = await request.json();
-  const ideas = await getIdeas();
-  const idea = ideas.find((i) => i.id === id);
   
-  if (idea) {
+  try {
+    let increment = 0;
     if (action === 'vote') {
-      idea.votes += 1;
+      increment = 1;
     } else if (action === 'unvote') {
-      idea.votes = Math.max(0, idea.votes - 1);
+      increment = -1;
     }
-    await saveIdeas(ideas);
-    return NextResponse.json(idea);
+
+    if (increment !== 0) {
+        await voteIdea(id, increment);
+    }
+    
+    const idea = await getIdea(id);
+    if (idea) {
+        return NextResponse.json(idea);
+    }
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  } catch (error) {
+      console.error(error);
+      return NextResponse.json({ error: 'Failed to vote' }, { status: 500 });
   }
-  return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }

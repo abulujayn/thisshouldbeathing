@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getIdeas, saveIdeas } from '@/lib/store';
+import { getIdea, updateIdea, deleteIdea } from '@/lib/store';
 import { isAuthenticated } from '@/lib/admin';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
@@ -22,14 +22,12 @@ export async function PATCH(
   const body = await request.json();
   const { title, description } = body;
 
-  const ideas = await getIdeas();
-  const index = ideas.findIndex((i) => i.id === id);
+  const idea = await getIdea(id);
 
-  if (index === -1) {
+  if (!idea) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const idea = ideas[index];
   const userEmail = await getUserEmail();
   const isAuthorized = (await isAuthenticated()) || (userEmail && idea.authorEmail === userEmail);
 
@@ -37,11 +35,13 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (title !== undefined) idea.title = title;
-  if (description !== undefined) idea.description = description;
-
-  await saveIdeas(ideas);
-  return NextResponse.json(idea);
+  try {
+      const updated = await updateIdea(id, { title, description });
+      return NextResponse.json(updated);
+  } catch (e) {
+      console.error(e);
+      return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+  }
 }
 
 export async function DELETE(
@@ -50,8 +50,7 @@ export async function DELETE(
 ) {
   const { id } = await params;
   
-  const ideas = await getIdeas();
-  const idea = ideas.find((i) => i.id === id);
+  const idea = await getIdea(id);
   
   if (!idea) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -64,7 +63,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const filteredIdeas = ideas.filter((i) => i.id !== id);
-  await saveIdeas(filteredIdeas);
-  return NextResponse.json({ success: true });
+  try {
+      await deleteIdea(id);
+      return NextResponse.json({ success: true });
+  } catch (e) {
+      console.error(e);
+      return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  }
 }

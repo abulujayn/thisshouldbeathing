@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getIdeas, saveIdeas, Idea } from '@/lib/store';
+import { getIdeas, createIdea, Idea } from '@/lib/store';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -20,7 +20,6 @@ export async function POST(request: Request) {
   const userEmail = (userPayload as { email: string }).email;
   const body = await request.json();
 
-  const ideas = await getIdeas();
   const newIdea: Idea = {
     id: Math.random().toString(36).substring(7),
     title: body.title,
@@ -30,7 +29,7 @@ export async function POST(request: Request) {
     comments: [],
     createdAt: Date.now(),
   };
-  ideas.unshift(newIdea);
-  await saveIdeas(ideas);
+  
+  await createIdea(newIdea);
   return NextResponse.json(newIdea);
 }

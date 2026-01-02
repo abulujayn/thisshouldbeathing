@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getIdeas, saveIdeas } from '@/lib/store';
+import { addComment, getIdea, Comment } from '@/lib/store';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -19,19 +19,20 @@ export async function POST(
 
   const { id } = await params;
   const body = await request.json();
-  const ideas = await getIdeas();
-  const idea = ideas.find((i) => i.id === id);
   
-  if (idea) {
-    const newComment = {
-      id: Math.random().toString(36).substring(7),
-      text: body.text,
-      authorEmail: userEmail,
-      createdAt: Date.now(),
-    };
-    idea.comments.push(newComment);
-    await saveIdeas(ideas);
-    return NextResponse.json(newComment);
+  // Check existence
+  const idea = await getIdea(id);
+  if (!idea) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const newComment: Comment = {
+    id: Math.random().toString(36).substring(7),
+    text: body.text,
+    authorEmail: userEmail,
+    createdAt: Date.now(),
+  };
+  
+  await addComment(id, newComment);
+  return NextResponse.json(newComment);
 }
